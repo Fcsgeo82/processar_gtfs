@@ -17,8 +17,8 @@ warnings.filterwarnings('ignore', category=UserWarning) # Ignores some shapely w
 BASE_DADOS = Path("C:/R_SMTR/dados")
 
 ano_gtfs = "2026"
-mes_gtfs = "05"
-estudo_gtfs = "02" #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+mes_gtfs = "07"
+estudo_gtfs = "01" #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 
 endereco_gtfs_combi = BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_rio-de-janeiro_pub.zip"
 pasta_shape_sppo = BASE_DADOS / f"shapes/{ano_gtfs}"

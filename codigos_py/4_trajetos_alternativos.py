@@ -16,8 +16,8 @@ warnings.filterwarnings('ignore')
 BASE_DADOS = Path("C:/R_SMTR/dados")
 
 ano_gtfs = "2026"
-mes_gtfs = "05"
-estudo_gtfs = "02" #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+mes_gtfs = "07"
+estudo_gtfs = "01" #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 
 endereco_gtfs = BASE_DADOS / f"gtfs/{ano_gtfs}/sppo_{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q_PROC.zip"
 caminho_saida = BASE_DADOS / f"os/os_{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}_excep.csv"
