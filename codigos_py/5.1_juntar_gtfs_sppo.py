@@ -6,7 +6,11 @@ import os
 import time
 from pathlib import Path
 import warnings
+import sys
 
+# Ensure UTF-8 output on Windows
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
 warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
 
 # ==============================================================================
@@ -16,11 +20,10 @@ BASE_DADOS = Path("C:/R_SMTR/dados")
 
 ano_gtfs      = "2026"
 mes_gtfs      = "08"
-estudo_gtfs = "01" #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+estudo_gtfs   = "01" #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 sufixo        = f"{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q"
 
 endereco_sppo       = BASE_DADOS / f"gtfs/{ano_gtfs}/sppo_{sufixo}_PROC.zip"
-endereco_brt        = BASE_DADOS / f"gtfs/{ano_gtfs}/brt_{sufixo}_PROC.zip"
 endereco_gtfs_combi = BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_combi_{sufixo}.zip"
 
 pasta_substituicao_combi = BASE_DADOS / "insumos/gtfs_combi"
@@ -196,7 +199,7 @@ def clean_gtfs(gtfs_dict):
 # PROCESSAMENTO PRINCIPAL
 # ==============================================================================
 print("\n╔════════════════════════════════════════════════════════════════════════════╗")
-print("║                    COMBINAÇÃO DE GTFS - SPPO + BRT                         ║")
+print("║                    PROCESSAMENTO DE GTFS - APENAS SPPO                     ║")
 print("╚════════════════════════════════════════════════════════════════════════════╝\n")
 
 tempo_inicio = time.time()
@@ -249,59 +252,12 @@ gtfs_sppo = clean_gtfs(gtfs_sppo)
 log_msg(f"✓ SPPO processado — {len(gtfs_sppo['routes'])} rotas, {len(gtfs_sppo['trips'])} trips")
 
 
-# ----------------- 2. CARREGAR E PROCESSAR BRT -----------------
-if not os.path.exists(endereco_brt):
-    raise FileNotFoundError(f"Arquivo BRT não encontrado: {endereco_brt}")
-
-gtfs_brt = read_gtfs(endereco_brt)
-log_msg("Processando BRT...")
-
-df_rb = gtfs_brt['routes']
-# Preserva o route_type original do GTFS BRT
-if 'route_type' not in df_rb.columns:
-    df_rb['route_type'] = np.nan
-
-routes_usar_brt = gtfs_brt['trips']['trip_short_name'].unique()
-gtfs_brt['routes'] = gtfs_brt['routes'][gtfs_brt['routes']['route_short_name'].isin(routes_usar_brt)]
-
-gtfs_brt['trips'] = ajustar_service_id(gtfs_brt['trips'])
-if 'calendar' in gtfs_brt: gtfs_brt['calendar'] = ajustar_service_id(gtfs_brt['calendar'])
-if 'feed_info' in gtfs_brt: gtfs_brt['feed_info'] = pd.DataFrame(columns=gtfs_brt['feed_info'].columns) # clear feed_info
-
-df_st_brt = gtfs_brt['stop_times']
-mask_vazios_brt = df_st_brt['arrival_time'].isna() | (df_st_brt['arrival_time'] == "") | df_st_brt['departure_time'].isna() | (df_st_brt['departure_time'] == "")
-stops_vazios_brt = df_st_brt[mask_vazios_brt]
-
-if not stops_vazios_brt.empty:
-    log_msg(f"⚠️  BRT tem {len(stops_vazios_brt)} stops com horários vazios!")
-    raise ValueError("⛔ BRT processado está com horários vazios.")
-
-gtfs_brt = clean_gtfs(gtfs_brt)
-
-log_msg(f"✓ BRT processado — {len(gtfs_brt['routes'])} rotas, {len(gtfs_brt['trips'])} trips")
-write_gtfs(gtfs_brt, endereco_brt)
+# ----------------- 2. ATRIBUIR GTFS SPPO COMO COMBINADO -----------------
+log_msg("Preparando GTFS SPPO como base unificada...")
+gtfs_combi = {k: v.copy() for k, v in gtfs_sppo.items()}
 
 
-# ----------------- 3. COMBINAR GTFS -----------------
-log_msg("Combinando GTFS SPPO + BRT...")
-gtfs_combi = {}
-
-all_keys = set(list(gtfs_sppo.keys()) + list(gtfs_brt.keys()))
-for k in all_keys:
-    dfs = []
-    if k in gtfs_sppo and not gtfs_sppo[k].empty: dfs.append(gtfs_sppo[k])
-    if k in gtfs_brt and not gtfs_brt[k].empty: dfs.append(gtfs_brt[k])
-    
-    if dfs:
-        # concatenate and drop strict duplicates
-        gtfs_combi[k] = pd.concat(dfs, ignore_index=True).drop_duplicates()
-    else:
-        gtfs_combi[k] = pd.DataFrame()
-
-log_msg("✓ GTFS combinados")
-
-
-# ----------------- 4. LIMPEZA E AJUSTES DO GTFS COMBINADO -----------------
+# ----------------- 3. LIMPEZA E AJUSTES DO GTFS -----------------
 log_msg("Aplicando limpezas e ajustes...")
 
 if 'stops' in gtfs_combi:
@@ -360,22 +316,22 @@ if 'shapes' in gtfs_combi and not gtfs_combi['shapes'].empty:
         log_msg("✓ Todos os shapes possuem pelo menos 2 pontos e estão ordenados.")
     gtfs_combi['shapes'] = df_sh
 
-log_msg("Validando horários no GTFS combinado...")
+log_msg("Validando horários no GTFS...")
 df_st_final = gtfs_combi.get('stop_times', pd.DataFrame())
 if not df_st_final.empty:
     mask = df_st_final['arrival_time'].isna() | (df_st_final['arrival_time'] == "") | df_st_final['departure_time'].isna() | (df_st_final['departure_time'] == "")
     if mask.any():
-        raise ValueError("⛔ ERRO: GTFS combinado tem stops com horários vazios!")
+        raise ValueError("⛔ ERRO: GTFS tem stops com horários vazios!")
 log_msg(f"✓ Todos os {len(df_st_final)} stops têm horários válidos")
 
 # Cleanup final combi to guarantee no orphaned records due to explicit point deletions
 gtfs_combi = clean_gtfs(gtfs_combi)
 
 # ==============================================================================
-# 5. SALVAMENTO GTFS COMBI e SUBSTITUIÇÃO
+# 4. SALVAMENTO GTFS COMBI e SUBSTITUIÇÃO
 # ==============================================================================
 log_msg("═══════════════════════════════════════════════════════════════")
-log_msg("ESTATÍSTICAS DO GTFS COMBINADO:")
+log_msg("ESTATÍSTICAS DO GTFS PROCESSADO:")
 for k, v in gtfs_combi.items():
     if k == 'shapes':
         log_msg(f"  ├─ Shapes únicos:   {v['shape_id'].nunique()}")
@@ -389,14 +345,13 @@ log_msg("✓ Arquivos GTFS salvos com sucesso")
 substituir_arquivos_gtfs(endereco_gtfs_combi, pasta_substituicao_combi)
 
 # ==============================================================================
-# FILTRAGEM FINAL E APLICAÇÃO DE CORES
+# 5. FILTRAGEM FINAL E APLICAÇÃO DE CORES
 # ==============================================================================
-gtfs_pub = dict(gtfs_combi)
+gtfs_pub = {k: v.copy() for k, v in gtfs_combi.items()}
 
 log_msg("Removendo viagens com service_id EXCEP...")
 if 'trips' in gtfs_pub:
     trips_pub = gtfs_pub['trips']
-    trips_excep = trips_pub[trips_pub['service_id'] == "EXCEP"]['trip_id'].unique()
     gtfs_pub['trips'] = trips_pub[trips_pub['service_id'] != "EXCEP"]
     
     # Clean up downstream associations
