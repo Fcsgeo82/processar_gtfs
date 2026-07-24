@@ -19,15 +19,37 @@ warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
 BASE_DADOS = Path("C:/R_SMTR/dados")
 
 ano_gtfs      = "2026"
-mes_gtfs      = "08"
-estudo_gtfs   = "01" #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+mes_gtfs      = "11"
+estudo_gtfs   = "03" #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 sufixo        = f"{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q"
 
+# Tipo de GTFS a processar: "brt", "sppo" ou "rio"
+gtfs_processar = "sppo"  # "brt" ou "sppo" ou "rio"
+
+# Etapa(s) do GTFS Rio (usado apenas quando gtfs_processar == "rio")
+# Pode ser uma string única "ETAPA_01" ou múltiplas separadas por vírgula "ETAPA_01,ETAPA_02"
+# A ordem define a prioridade: a primeira etapa encontrada vence
+etapa_gtfs_rio = "ETAPA_01"  # "ETAPA_01", "ETAPA_02", "ETAPA_03", "ETAPA_04" ou "ETAPA_05" (ou múltiplas: "ETAPA_01,ETAPA_02")
+
 endereco_sppo       = BASE_DADOS / f"gtfs/{ano_gtfs}/sppo_{sufixo}_PROC.zip"
+endereco_brt        = BASE_DADOS / f"gtfs/{ano_gtfs}/brt_{sufixo}_PROC.zip"
 endereco_gtfs_combi = BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_combi_{sufixo}.zip"
 
+# Pastas de substituição base (fallback) – definição condicional
 pasta_substituicao_combi = BASE_DADOS / "insumos/gtfs_combi"
-pasta_substituicao_pub   = BASE_DADOS / "insumos/gtfs_pub"
+pasta_substituicao_pub = BASE_DADOS / "insumos/gtfs_pub"
+
+etapas = [e.strip() for e in etapa_gtfs_rio.split(',') if e.strip()]
+pasta_substituicao_combi_paths = [BASE_DADOS / f"insumos/gtfs_combi/{gtfs_processar.upper()}/{et}" for et in etapas]
+pasta_substituicao_pub_paths = [BASE_DADOS / f"insumos/gtfs_pub/{gtfs_processar.upper()}/{et}" for et in etapas]
+
+# Substituição de arquivos GTFS COMBI (não usada neste script SPPO)
+# for pasta in pasta_substituicao_combi_paths:
+#     substituir_arquivos_gtfs(endereco_gtfs_combi, tipo_gtfs="combi")
+
+# Substituição de arquivos GTFS PUBLICO (não usada neste script SPPO)
+# for pasta in pasta_substituicao_pub_paths:
+#     substituir_arquivos_gtfs(caminho_gtfs_pub, tipo_gtfs="pub")
 
 # ==============================================================================
 # FUNÇÕES AUXILIARES
@@ -118,36 +140,108 @@ def atualizar_cores_gtfs(gtfs_dict, caminho_cores):
     gtfs_dict['routes'] = df_merged
     return gtfs_dict
 
-def substituir_arquivos_gtfs(caminho_zip, pasta_origem, arquivos=["calendar_dates.txt", "fare_attributes.txt", "fare_rules.txt", "feed_info.txt"]):
+def obter_pastas_substituicao(tipo_gtfs="combi"):
+    """
+    Retorna lista de pastas onde buscar os arquivos de substituição,
+    baseada no gtfs_processar e etapa_gtfs_rio.
+
+    Prioridade: pastas mais específicas primeiro, fallback por último.
+
+    Para tipo_gtfs="combi": usa base insumos/gtfs_combi
+    Para tipo_gtfs="pub": usa base insumos/gtfs_pub
+
+    Se gtfs_processar == "rio": adiciona subpastas RIO/{etapa} para cada etapa
+    (suporta múltiplas etapas separadas por vírgula, ex: "ETAPA_01,ETAPA_02")
+    A ordem das etapas define a prioridade de busca.
+    """
+    # Define pasta base conforme tipo
+    if tipo_gtfs == "combi":
+        pasta_base = pasta_substituicao_combi  # BASE_DADOS / "insumos/gtfs_combi"
+    else:
+        pasta_base = pasta_substituicao_pub    # BASE_DADOS / "insumos/gtfs_pub"
+
+    pastas = []
+
+    # Se gtfs_processar não é SPPO, usa os caminhos pré-configurados (etapas)
+    if gtfs_processar.lower() != 'sppo':
+        # Obtém as pastas específicas por etapa
+        pastas = pasta_substituicao_combi_paths if tipo_gtfs == "combi" else pasta_substituicao_pub_paths
+
+    # Se nenhuma pasta específica encontrada, usa a pasta base como fallback
+    if not pastas:
+        pastas.append(pasta_base)
+    else:
+        # Garante que a pasta base esteja ao final como fallback, caso ainda não esteja incluída
+        if pasta_base not in pastas:
+            pastas.append(pasta_base)
+
+    # Remove duplicatas mantendo ordem
+    pastas_unicas = []
+    for p in pastas:
+        if p not in pastas_unicas:
+            pastas_unicas.append(p)
+
+    return pastas_unicas
+
+
+def substituir_arquivos_gtfs(caminho_zip, tipo_gtfs="combi", arquivos=["calendar_dates.txt", "fare_attributes.txt", "fare_rules.txt", "feed_info.txt"]):
+    """
+    Substitui arquivos no GTFS ZIP agregando conteúdo de múltiplas pastas de origem.
+
+    Args:
+        caminho_zip: Path do arquivo ZIP a modificar
+        tipo_gtfs: "combi" ou "pub" - define qual conjunto de pastas usar
+        arquivos: lista de nomes de arquivos a substituir
+    """
     if not os.path.exists(caminho_zip):
         raise FileNotFoundError(f"Arquivo ZIP não encontrado: {caminho_zip}")
-    if not os.path.exists(pasta_origem):
-        raise FileNotFoundError(f"Pasta de origem não encontrada: {pasta_origem}")
-        
-    log_msg(f"Substituindo arquivos em {os.path.basename(caminho_zip)} usando {pasta_origem}")
-    
+
+    pastas_origem = obter_pastas_substituicao(tipo_gtfs)
+
+    log_msg(f"Substituindo arquivos em {os.path.basename(caminho_zip)} (gtfs_processar={gtfs_processar})")
+    for p in pastas_origem:
+        log_msg(f"  🔍 Buscando em: {p}")
+
     # Read existing zip to a dictionary mapping filenames to content
     zin_data = {}
     with zipfile.ZipFile(caminho_zip, 'r') as zin:
         for item in zin.infolist():
             zin_data[item.filename] = zin.read(item.filename)
-            
-    # Replace contents from pasta_origem
+
+    # Para cada arquivo a substituir, agrega conteúdo de TODAS as pastas
     for arq in arquivos:
-        orig = os.path.join(pasta_origem, arq)
-        if os.path.exists(orig):
-            with open(orig, 'rb') as f:
-                zin_data[arq] = f.read()
-            log_msg(f"  ✔ Substituído: {arq}")
+        dfs_agregados = []
+        pastas_com_arquivo = []
+
+        for pasta_origem in pastas_origem:
+            orig = os.path.join(pasta_origem, arq)
+            if os.path.exists(orig):
+                try:
+                    df = pd.read_csv(orig, dtype=str)
+                    if not df.empty:
+                        dfs_agregados.append(df)
+                        pastas_com_arquivo.append(pasta_origem)
+                        log_msg(f"  ✔ Encontrado: {arq} em {pasta_origem} ({len(df)} linhas)")
+                except pd.errors.EmptyDataError:
+                    log_msg(f"  ⚠ Arquivo vazio: {arq} em {pasta_origem}")
+                except Exception as e:
+                    log_msg(f"  ⚠ Erro ao ler {arq} em {pasta_origem}: {e}")
+
+        if dfs_agregados:
+            # Concatena todos os DataFrames e remove duplicatas
+            df_final = pd.concat(dfs_agregados, ignore_index=True).drop_duplicates()
+            csv_str = df_final.to_csv(index=False)
+            zin_data[arq] = csv_str.encode('utf-8')
+            log_msg(f"  ✔ Agregado: {arq} -> {len(df_final)} linhas únicas (de {len(pastas_com_arquivo)} pasta(s): {', '.join([p.name for p in pastas_com_arquivo])})")
         else:
-            log_msg(f"  ⚠ Arquivo {arq} não encontrado na origem, mantido o original")
-            
+            log_msg(f"  ⚠ Arquivo {arq} não encontrado em nenhuma origem, mantido o original")
+
     # Write back
     caminho_temp = caminho_zip.with_name(caminho_zip.name.replace('.zip', '_TEMP.zip'))
     with zipfile.ZipFile(caminho_temp, 'w', compression=zipfile.ZIP_DEFLATED) as zout:
         for fname, content in zin_data.items():
             zout.writestr(fname, content)
-            
+
     os.replace(caminho_temp, caminho_zip)
     log_msg(f"  ✓ Arquivo {os.path.basename(caminho_zip)} recriado com sucesso")
 
@@ -205,14 +299,27 @@ print("╚═══════════════════════�
 tempo_inicio = time.time()
 
 # ----------------- 1. CARREGAR E PROCESSAR SPPO -----------------
-if not os.path.exists(endereco_sppo):
-    raise FileNotFoundError(f"Arquivo SPPO não encontrado: {endereco_sppo}")
+# -----------------------------------------------------------------
+# 1. CARREGAR GTFS DE ENTRADA (conforme gtfs_processar)
+# -----------------------------------------------------------------
+if gtfs_processar.lower() == "sppo":
+    endereco_input = endereco_sppo
+elif gtfs_processar.lower() == "brt":
+    endereco_input = endereco_brt
+elif gtfs_processar.lower() == "rio":
+    # Nome padrão para GTFS Rio de processo
+    endereco_input = BASE_DADOS / f"gtfs/{ano_gtfs}/rio_{sufixo}_PROC.zip"
+else:
+    raise ValueError(f"Tipo gtfs_processar desconhecido: {gtfs_processar}")
 
-gtfs_sppo = read_gtfs(endereco_sppo)
-log_msg("Processando SPPO...")
+if not os.path.exists(endereco_input):
+    raise FileNotFoundError(f"Arquivo GTFS não encontrado: {endereco_input}")
+
+gtfs_input = read_gtfs(endereco_input)
+log_msg(f"Processando {gtfs_processar.upper()}...")
 
 # routes SPPO
-df_rs = gtfs_sppo['routes']
+df_rs = gtfs_input['routes']
 df_rs['numero'] = df_rs['route_short_name'].str.extract(r'([0-9]+)').fillna(0).astype(int)
 df_rs['route_type'] = '700'
 df_rs.loc[df_rs['numero'] > 1000, 'route_type'] = '200'
@@ -220,11 +327,11 @@ df_rs.loc[df_rs['route_short_name'].isin(["LECD124", "LECD125"]), 'route_type'] 
 df_rs.drop(columns=['numero'], inplace=True)
 
 # adjust services
-gtfs_sppo['trips'] = ajustar_service_id(gtfs_sppo['trips'])
-if 'calendar' in gtfs_sppo: gtfs_sppo['calendar'] = ajustar_service_id(gtfs_sppo['calendar'])
+gtfs_input['trips'] = ajustar_service_id(gtfs_input['trips'])
+if 'calendar' in gtfs_input: gtfs_input['calendar'] = ajustar_service_id(gtfs_input['calendar'])
 
 # Verify blank schedules
-df_st_sppo = gtfs_sppo['stop_times']
+df_st_sppo = gtfs_input['stop_times']
 mask_vazios = df_st_sppo['arrival_time'].isna() | (df_st_sppo['arrival_time'] == "") | df_st_sppo['departure_time'].isna() | (df_st_sppo['departure_time'] == "")
 stops_vazios_sppo = df_st_sppo[mask_vazios]
 
@@ -233,7 +340,7 @@ if not stops_vazios_sppo.empty:
     raise ValueError("⛔ SPPO processado está com horários vazios.")
 
 trips_com_st = df_st_sppo['trip_id'].unique()
-trips_excep = gtfs_sppo['trips'][gtfs_sppo['trips']['service_id'] == "EXCEP"]['trip_id'].unique()
+trips_excep = gtfs_input['trips'][gtfs_input['trips']['service_id'] == "EXCEP"]['trip_id'].unique()
 trips_manter = np.unique(np.concatenate([trips_com_st, trips_excep]))
 
 path_fantasmas = BASE_DADOS / "insumos/trip_id_fantasma.txt"
@@ -242,19 +349,19 @@ if os.path.exists(path_fantasmas):
 else:
     trips_fantasma = []
 
-trips_final_sppo = set(trips_manter) - set(trips_fantasma)
+trips_final_input = set(trips_manter) - set(trips_fantasma)
 
 # Filter trips
-gtfs_sppo['trips'] = gtfs_sppo['trips'][gtfs_sppo['trips']['trip_id'].isin(trips_final_sppo)]
+gtfs_input['trips'] = gtfs_input['trips'][gtfs_input['trips']['trip_id'].isin(trips_final_input)]
 # Call clean_gtfs to cascade removal of unused stop_times, routes, shapes, etc
-gtfs_sppo = clean_gtfs(gtfs_sppo)
+gtfs_input = clean_gtfs(gtfs_input)
 
-log_msg(f"✓ SPPO processado — {len(gtfs_sppo['routes'])} rotas, {len(gtfs_sppo['trips'])} trips")
+log_msg(f"✓ {gtfs_processar.upper()} processado — {len(gtfs_input['routes'])} rotas, {len(gtfs_input['trips'])} trips")
 
 
 # ----------------- 2. ATRIBUIR GTFS SPPO COMO COMBINADO -----------------
 log_msg("Preparando GTFS SPPO como base unificada...")
-gtfs_combi = {k: v.copy() for k, v in gtfs_sppo.items()}
+gtfs_combi = {k: v.copy() for k, v in gtfs_input.items()}
 
 
 # ----------------- 3. LIMPEZA E AJUSTES DO GTFS -----------------
@@ -262,7 +369,7 @@ log_msg("Aplicando limpezas e ajustes...")
 
 if 'stops' in gtfs_combi:
     df_stops = gtfs_combi['stops']
-    pontos_apagar = df_stops[df_stops['stop_name'] == "APAGAR"]['stop_id'].tolist()
+    pontos_apagar = df_stops[df_stops['stop_name'] == "APAGAR"]["stop_id"].tolist()
     # keeping unique stop_ids and not in pontos_apagar
     df_stops = df_stops.drop_duplicates(subset=['stop_id'])
     df_stops = df_stops[~df_stops['stop_id'].isin(pontos_apagar)]
@@ -342,7 +449,7 @@ log_msg("═══════════════════════�
 write_gtfs(gtfs_combi, endereco_gtfs_combi)
 log_msg("✓ Arquivos GTFS salvos com sucesso")
 
-substituir_arquivos_gtfs(endereco_gtfs_combi, pasta_substituicao_combi)
+substituir_arquivos_gtfs(endereco_gtfs_combi, tipo_gtfs="combi")
 
 # ==============================================================================
 # 5. FILTRAGEM FINAL E APLICAÇÃO DE CORES
@@ -353,7 +460,7 @@ log_msg("Removendo viagens com service_id EXCEP...")
 if 'trips' in gtfs_pub:
     trips_pub = gtfs_pub['trips']
     gtfs_pub['trips'] = trips_pub[trips_pub['service_id'] != "EXCEP"]
-    
+
     # Clean up downstream associations
     gtfs_pub = clean_gtfs(gtfs_pub)
 
@@ -364,7 +471,7 @@ log_msg("Salvando GTFS público final...")
 caminho_gtfs_pub = BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_rio-de-janeiro_pub.zip"
 write_gtfs(gtfs_pub, caminho_gtfs_pub)
 
-substituir_arquivos_gtfs(caminho_gtfs_pub, pasta_substituicao_pub)
+substituir_arquivos_gtfs(caminho_gtfs_pub, tipo_gtfs="pub")
 
 # ==============================================================================
 # FINALIZAÇÃO

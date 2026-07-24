@@ -6,6 +6,8 @@ import os
 import time
 from pathlib import Path
 import warnings
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
 
 warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
 
@@ -15,11 +17,15 @@ warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
 BASE_DADOS = Path("C:/R_SMTR/dados")
 
 ano_gtfs      = "2026"
-mes_gtfs      = "08"
-estudo_gtfs = "01" #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+mes_gtfs      = "11"
+estudo_gtfs = "03" #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 sufixo        = f"{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q"
 
-endereco_sppo       = BASE_DADOS / f"gtfs/{ano_gtfs}/sppo_{sufixo}_PROC.zip"
+gtfs_processar = 'sppo'  # "sppo" ou "rio"
+
+etapa_gtfs_rio = "ETAPA_01" # "ETAPA_01", "ETAPA_02", "ETAPA_03", "ETAPA_04" ou "ETAPA_05"
+
+endereco_sppo       = BASE_DADOS / f"gtfs/{ano_gtfs}/{gtfs_processar}_{sufixo}_PROC.zip"
 endereco_brt        = BASE_DADOS / f"gtfs/{ano_gtfs}/brt_{sufixo}_PROC.zip"
 endereco_gtfs_combi = BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_combi_{sufixo}.zip"
 
@@ -31,8 +37,21 @@ endereco_gtfs_combi = BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_combi_{sufixo}.zip"
 
 linhas_excluir = []
 
-pasta_substituicao_combi = BASE_DADOS / "insumos/gtfs_combi"
-pasta_substituicao_pub   = BASE_DADOS / "insumos/gtfs_pub"
+if gtfs_processar.lower() == 'sppo':
+    pasta_substituicao_combi = BASE_DADOS / "insumos/gtfs_combi"
+    pasta_substituicao_pub = BASE_DADOS / "insumos/gtfs_pub"
+    # SPPO uses a single folder, keep as list for unified handling
+    pasta_substituicao_combi_paths = [pasta_substituicao_combi]
+    pasta_substituicao_pub_paths = [pasta_substituicao_pub]
+else:
+    # Allow multiple etapas separated by commas
+    etapas = [e.strip() for e in etapa_gtfs_rio.split(',') if e.strip()]
+    pasta_substituicao_combi_paths = [
+        BASE_DADOS / f"insumos/gtfs_combi/{gtfs_processar.upper()}/{et}" for et in etapas
+    ]
+    pasta_substituicao_pub_paths = [
+        BASE_DADOS / f"insumos/gtfs_pub/{gtfs_processar.upper()}/{et}" for et in etapas
+    ]
 
 # ==============================================================================
 # FUNÇÕES AUXILIARES
@@ -403,7 +422,8 @@ log_msg("═══════════════════════�
 write_gtfs(gtfs_combi, endereco_gtfs_combi)
 log_msg("✓ Arquivos GTFS salvos com sucesso")
 
-substituir_arquivos_gtfs(endereco_gtfs_combi, pasta_substituicao_combi)
+for pasta in pasta_substituicao_combi_paths:
+    substituir_arquivos_gtfs(endereco_gtfs_combi, pasta)
 
 # ==============================================================================
 # FILTRAGEM FINAL E APLICAÇÃO DE CORES
@@ -426,7 +446,8 @@ log_msg("Salvando GTFS público final...")
 caminho_gtfs_pub = BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_rio-de-janeiro_pub.zip"
 write_gtfs(gtfs_pub, caminho_gtfs_pub)
 
-substituir_arquivos_gtfs(caminho_gtfs_pub, pasta_substituicao_pub)
+for pasta in pasta_substituicao_pub_paths:
+    substituir_arquivos_gtfs(caminho_gtfs_pub, pasta)
 
 # ==============================================================================
 # FINALIZAÇÃO

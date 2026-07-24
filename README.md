@@ -1,6 +1,25 @@
 # Resumo dos Códigos Python — `codigos_py/`
 
-Os 7 scripts formam um **pipeline sequencial** de processamento de dados GTFS para o transporte público do Rio de Janeiro. Cada script lê a saída do anterior e produz insumos para o próximo.
+Os scripts formam um **pipeline sequencial** de processamento de dados GTFS para o transporte público do Rio de Janeiro. Cada script lê a saída do anterior e produz insumos para o próximo.
+
+---
+
+## 0️⃣ `0_validar_gtfs_entrada.py`
+**Objetivo:** Validar a integridade do GTFS de entrada **antes** de iniciar o pipeline de processamento, detectando problemas antecipadamente.
+
+| Item | Descrição |
+|------|-----------|
+| **Entrada** | Arquivo GTFS ZIP original (SPPO, BRT ou Rio) — tabelas `routes.txt`, `trips.txt`, `stop_times.txt`, `calendar.txt`, `calendar_dates.txt`, `shapes.txt` |
+| **Validações** | 1. Todas as routes possuem pelo menos uma trip associada |
+|  | 2. Trips de excepcionalidade (com `[...]` no `trip_headsign`) seguem o padrão: sem acentos, espaços substituídos por `_`, apenas minúsculas e caracteres `[a-z0-9_]` |
+|  | 3. (Extra) Trips sem `route_id` preenchido |
+|  | 4. (Extra) Inventário de `service_id` utilizados |
+| **Saída** | Relatório CSV com timestamp em `resultados/validacoes_snapshot/validacao_gtfs_entrada_<tipo>_<sufixo>_<timestamp>.csv` |
+| **Retorno** | `sys.exit(0)` se todas as validações críticas passaram; `sys.exit(1)` se houver falhas |
+| **Dependências** | `pandas`, `zipfile`, `re`, `unicodedata`, `pathlib` |
+
+> [!TIP]
+> Execute este script antes do `2_ajustar_stop_times.py`. Ele gera sugestões automáticas de correção para os `trip_headsign` fora do padrão.
 
 ---
 
@@ -36,20 +55,9 @@ Os 7 scripts formam um **pipeline sequencial** de processamento de dados GTFS pa
 
 ---
 
-Este código está datado e não tem mais utilidade.
-~~## 3️⃣ `3_desvios_nao-utilizar.py` 
-**Objetivo:** Ajustar o calendário (`calendar`, `calendar_dates`) e os `service_id` das viagens do GTFS para refletir **desvios operacionais temporários** (eventos, obras, etc.).~~
+~~## 3️⃣ `3_desvios_nao-utilizar.py`~~
 
-~~| Item | Descrição |
-|------|-----------|
-| **Entrada** | GTFS processado (`_PROC.zip`) + CSVs de insumos locais: `insumos_desvios/linhas_desvios.csv` (quais linhas são afetadas) e `insumos_desvios/descricao_desvios.csv` (datas e códigos dos desvios) |
-| **Processamento** | 1. Filtra desvios ativos (data_inicio < hoje < data_fim) |
-|  | 2. Linhas **não afetadas** por desvios recebem sufixo `_REG` no `service_id` |
-|  | 3. Linhas **afetadas** recebem sufixo `_DESAT_<cod_desvio>` |
-|  | 4. Gera entradas em `calendar_dates` para ativar/desativar serviços nas datas do evento |
-|  | 5. Filtra datas do calendário pelo período do `feed_info` |
-| **Saída** | Sobrescreve o GTFS processado com `trips.txt`, `calendar.txt` e `calendar_dates.txt` atualizados |
-| **Dependências** | `pandas`, `numpy`, `zipfile`, `gspread` (importado mas usa CSV local) |~~
+> Este código está datado e **não tem mais utilidade**. Usar `4_trajetos_alternativos.py` para trabalhar com excepcionalidades.
 
 ---
 
@@ -85,6 +93,36 @@ Este código está datado e não tem mais utilidade.
 
 > [!TIP]
 > A função `clean_gtfs()` implementa uma limpeza em cascata equivalente ao `gtfstools::filter_by_trip_id` do R — remove registros órfãos de todas as tabelas associadas.
+
+---
+
+## 5️⃣.1️⃣ `5.1_juntar_gtfs_sppo.py`
+**Objetivo:** Variante do script 5 para processar **um único GTFS** (SPPO, BRT ou Rio), sem combinar com outro modal. Gera o GTFS combinado e público a partir de uma única fonte.
+
+| Item | Descrição |
+|------|-----------|
+| **Entrada** | Um único GTFS processado (`_PROC.zip`) do tipo `sppo`, `brt` ou `rio` + insumos de substituição |
+| **Diferencial** | Suporta múltiplas **etapas** do GTFS Rio (ex: `"ETAPA_01,ETAPA_02"`), agregando `calendar_dates` e demais arquivos de substituição de múltiplas pastas |
+| **Etapas** | Idênticas ao script 5, mas para uma única fonte (sem etapa de combinação SPPO+BRT) |
+| **Pastas de substituição** | Resolução hierárquica: busca pastas específicas por etapa, com fallback para a pasta base |
+| **Saída** | `gtfs_combi_YYYY-MM-QQ.zip` (interno) + `gtfs_rio-de-janeiro_pub.zip` (público) |
+| **Dependências** | `pandas`, `numpy`, `zipfile` |
+
+> [!NOTE]
+> Use este script quando apenas **um modal** (ex: somente Rio) precisa ser publicado, sem combinar SPPO+BRT.
+
+---
+
+## 5️⃣.2️⃣ `5.2_juntar_gtfs_simples.py`
+**Objetivo:** Concatenação simples de **N arquivos GTFS ZIP** em um único arquivo, sem limpezas avançadas ou lógica de negócio. Útil para testes e inspeções rápidas.
+
+| Item | Descrição |
+|------|-----------|
+| **Entrada** | Lista de arquivos GTFS ZIP (`INPUT_ZIPS`) configurada diretamente no script |
+| **Processamento** | 1. Lê todos os ZIPs e concatena cada tabela `.txt` |
+|  | 2. Remove linhas exatamente duplicadas de cada tabela |
+| **Saída** | Um único ZIP em `OUTPUT_ZIP` configurado no script |
+| **Dependências** | `pandas`, `zipfile` |
 
 ---
 
@@ -156,27 +194,53 @@ Este código está datado e não tem mais utilidade.
 
 ```mermaid
 graph TD
-    A["1 - Extrair QH"] --> |"Quadros horários por linha"| OUT1["CSVs de QH"]
-    B["2 - Ajustar Stop Times"] --> |"GTFS _PROC.zip"| C["3 - Desvios"]
-    C --> |"GTFS com calendário ajustado"| D["4 - Trajetos Alternativos"]
-    C --> |"GTFS _PROC.zip atualizado"| E["5 - Juntar GTFS"]
-    D --> |"CSV de exceções"| OUT4["os_excep.csv"]
-    E --> |"GTFS combinado + público"| F["6 - Gerar Shapes"]
-    E --> |"GTFS público"| G["7 - Lista Partidas"]
-    F --> |"Shapefiles / GeoPackages"| OUT6["Arquivos GIS"]
-    G --> |"CSVs + Parquet"| OUT7["Lista de partidas"]
-    E --> |"GTFS público"| H["8 - Gerar Extensões"]
-    H --> |"CSV de extensões"| OUT8["extensoes.csv"]
+    ENTRADA["GTFS Original SPPO/BRT/Rio"]
+    A0["0 - Validar GTFS (opcional)"]
+    B["2 - Ajustar Stop Times GPS"]
+    D["4 - Trajetos Alternativos"]
+    E5["5 - Juntar GTFS SPPO+BRT"]
+    E51["5.1 - Juntar GTFS único modal"]
+    E52["5.2 - Concatenar simples"]
+    PUB["gtfs_combi.zip + pub.zip"]
+    F["6 - Gerar Shapes"]
+    G["7 - Lista Partidas"]
+    H["8 - Gerar Extensões"]
+    A["1 - Extrair QH"]
+    OUT4["os_excep.csv"]
+    OUT6["Arquivos GIS"]
+    OUT7["Lista de partidas"]
+    OUT8["extensoes.csv"]
+    OUT1["Quadros horários"]
 
-    style A fill:#4a90d9,color:#fff
+    ENTRADA --> A0
+    ENTRADA --> B
+    B --> D
+    B --> E5
+    B --> E51
+    D --> OUT4
+    E5 --> PUB
+    E51 --> PUB
+    E52 --> PUB
+    PUB --> F
+    PUB --> G
+    PUB --> H
+    PUB --> A
+    F --> OUT6
+    G --> OUT7
+    H --> OUT8
+    A --> OUT1
+
+    style A0 fill:#e07b39,color:#fff
     style B fill:#4a90d9,color:#fff
-    style C fill:#e8a838,color:#fff
     style D fill:#e8a838,color:#fff
-    style E fill:#50b848,color:#fff
+    style E5 fill:#50b848,color:#fff
+    style E51 fill:#50b848,color:#fff
+    style E52 fill:#50b848,color:#fff
     style F fill:#9b59b6,color:#fff
     style G fill:#9b59b6,color:#fff
     style H fill:#9b59b6,color:#fff
+    style A fill:#9b59b6,color:#fff
 ```
 
 > [!NOTE]
-> O script **1** é independente (usa o GTFS combinado já pronto). Os scripts **2→5→7** formam o pipeline principal de construção do GTFS. Os scripts **4**, **6**, **8** e **8.1** são etapas de pós-processamento/exportação.
+> O script **0** é opcional mas recomendado antes de iniciar o pipeline. O script **2** é a entrada principal para todos os modais. Os scripts **5**, **5.1** e **5.2** são alternativas de combinação; use o mais adequado ao contexto. Os scripts **4**, **6**, **7**, **8** e **8.1** são etapas de pós-processamento/exportação independentes.
