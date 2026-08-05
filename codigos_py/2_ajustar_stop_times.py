@@ -22,10 +22,10 @@ ano_velocidade = '2025'
 mes_velocidade = '10'
 
 ano_gtfs = '2026'
-mes_gtfs = '11'
-estudo_gtfs = '03' #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+mes_gtfs = '12'
+estudo_gtfs = '05' #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 
-gtfs_processar = 'brt'  # "brt" ou "sppo" ou "rio"
+gtfs_processar = 'sppo'  # "brt" ou "sppo" ou "rio"
 
 endereco_gtfs = BASE_DADOS / f"gtfs/{ano_gtfs}/{gtfs_processar}_{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q.zip"
 velocidade_padrao_kmh = 15.0

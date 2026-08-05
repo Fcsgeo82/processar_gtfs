@@ -126,6 +126,45 @@ Os scripts formam um **pipeline sequencial** de processamento de dados GTFS para
 
 ---
 
+## 9️⃣ `9_filtrar_gtfs_por_lista.py`
+**Objetivo:** Gerar um **GTFS filtrado** contendo apenas as trips presentes em uma lista de excepcionalidades/desvios, combinando cinco critérios de correspondência.
+
+| Item | Descrição |
+|------|-----------|
+| **Entrada** | GTFS processado (`_PROC.zip`) + lista embutida no script (TSV com colunas Serviço, Vista, Consórcio, Sentido, Extensão, Evento) |
+| **Critério de filtro** | Junção por chave composta: `trip_short_name` + `route_long_name` + `agency_name` + `direction_id` + evento extraído do `trip_headsign` (`[...]`) |
+| **Processamento** | 1. Filtra trips pelo calendário alvo (padrão: `EXCEP`) |
+|  | 2. Enriquece trips com `route_long_name` e `agency_name` via join |
+|  | 3. Extrai o evento do `trip_headsign` e compõe a chave de junção |
+|  | 4. Aplica `clean_gtfs` em cascata para remover stop_times, shapes, stops e calendar_dates órfãos |
+|  | 5. Reporta entradas da lista sem match no GTFS |
+| **Saída** | `sppo_YYYY-MM-QQ_FILTRADO.zip` |
+| **Dependências** | `pandas`, `numpy`, `zipfile` |
+
+> [!TIP]
+> A coluna **Extensão** da lista de filtro é apenas referência — não entra na chave de correspondência. O script reporta explicitamente quais entradas da lista **não tiveram match** no GTFS.
+
+---
+
+## 1️⃣0️⃣ `10_juntar_dois_gtfs.py`
+**Objetivo:** **Juntar dois arquivos GTFS** em um único, eliminando duplicatas com controle de precedência por chave primária GTFS.
+
+| Item | Descrição |
+|------|-----------|
+| **Entrada** | `GTFS_PRINCIPAL` (tem precedência) + `GTFS_SECUNDARIO` — tipicamente o GTFS filtrado + o GTFS completo |
+| **Estratégia de deduplicação** | Para cada tabela `.txt`: |
+|  | 1. Remove linhas 100% idênticas (`drop_duplicates` na linha inteira) |
+|  | 2. Remove conflitos de chave primária, mantendo o registro do PRINCIPAL (`keep='first'`) |
+| **Chaves primárias** | Definidas em `CHAVES_PRIMARIAS` por tabela: `trip_id` para trips, `[trip_id, stop_sequence]` para stop_times, `[shape_id, shape_pt_sequence]` para shapes, etc. |
+| **Pós-processamento** | Aplica `clean_gtfs` para remover registros órfãos resultantes da fusão |
+| **Saída** | `sppo_YYYY-MM-QQ_COMBINADO.zip` |
+| **Dependências** | `pandas`, `numpy`, `zipfile` |
+
+> [!IMPORTANT]
+> O GTFS definido em `GTFS_PRINCIPAL` **sempre vence** em caso de conflito de chave primária. Use o GTFS filtrado (saída do script 9) como principal para garantir que os trajetos alternativos corretos prevaleçam.
+
+---
+
 ## 6️⃣ `6_gerar_shapes.py`
 **Objetivo:** Gerar **arquivos geoespaciais** (Shapefile + GeoPackage) dos trajetos (linhas) e pontos de parada a partir do GTFS público.
 
@@ -201,7 +240,11 @@ graph TD
     E5["5 - Juntar GTFS SPPO+BRT"]
     E51["5.1 - Juntar GTFS único modal"]
     E52["5.2 - Concatenar simples"]
+    E9["9 - Filtrar GTFS por Lista"]
+    E10["10 - Juntar Dois GTFS"]
     PUB["gtfs_combi.zip + pub.zip"]
+    FILTRADO["GTFS Filtrado (_FILTRADO.zip)"]
+    COMBINADO["GTFS Combinado (_COMBINADO.zip)"]
     F["6 - Gerar Shapes"]
     G["7 - Lista Partidas"]
     H["8 - Gerar Extensões"]
@@ -211,13 +254,20 @@ graph TD
     OUT7["Lista de partidas"]
     OUT8["extensoes.csv"]
     OUT1["Quadros horários"]
+    LISTA["Lista de Excepcionalidades CSV/TSV"]
 
     ENTRADA --> A0
     ENTRADA --> B
     B --> D
     B --> E5
     B --> E51
+    B --> E9
     D --> OUT4
+    LISTA --> E9
+    E9 --> FILTRADO
+    FILTRADO --> E10
+    ENTRADA --> E10
+    E10 --> COMBINADO
     E5 --> PUB
     E51 --> PUB
     E52 --> PUB
@@ -236,11 +286,16 @@ graph TD
     style E5 fill:#50b848,color:#fff
     style E51 fill:#50b848,color:#fff
     style E52 fill:#50b848,color:#fff
+    style E9 fill:#c0392b,color:#fff
+    style E10 fill:#c0392b,color:#fff
     style F fill:#9b59b6,color:#fff
     style G fill:#9b59b6,color:#fff
     style H fill:#9b59b6,color:#fff
     style A fill:#9b59b6,color:#fff
+    style LISTA fill:#f39c12,color:#fff
+    style FILTRADO fill:#e74c3c,color:#fff
+    style COMBINADO fill:#e74c3c,color:#fff
 ```
 
 > [!NOTE]
-> O script **0** é opcional mas recomendado antes de iniciar o pipeline. O script **2** é a entrada principal para todos os modais. Os scripts **5**, **5.1** e **5.2** são alternativas de combinação; use o mais adequado ao contexto. Os scripts **4**, **6**, **7**, **8** e **8.1** são etapas de pós-processamento/exportação independentes.
+> O script **0** é opcional mas recomendado antes de iniciar o pipeline. O script **2** é a entrada principal para todos os modais. Os scripts **5**, **5.1** e **5.2** são alternativas de combinação; use o mais adequado ao contexto. Os scripts **4**, **6**, **7**, **8** e **8.1** são etapas de pós-processamento/exportação independentes. Os scripts **9** e **10** formam um sub-fluxo independente para geração de GTFSs com excepcionalidades/desvios selecionados.
