@@ -18,7 +18,7 @@ BASE_DADOS = Path("C:/R_SMTR/dados")
 
 ano_gtfs      = "2026"
 mes_gtfs      = "08"
-estudo_gtfs = "01" #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+estudo_gtfs = "02" #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 sufixo        = f"{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q"
 
 gtfs_processar = 'sppo'  # "sppo" ou "rio"

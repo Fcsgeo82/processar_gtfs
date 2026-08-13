@@ -9,7 +9,7 @@ BASE_DADOS = Path("C:/R_SMTR/dados")
 BASE_RESULTADOS = Path("C:/R_SMTR/resultados")
 
 ano_gtfs = "2026"
-mes_gtfs = "05"
+mes_gtfs = "08"
 estudo_gtfs = "01" #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 
 # GTFS file path
@@ -26,7 +26,7 @@ with zipfile.ZipFile(end_gtfs, 'r') as z:
         trips = pd.read_csv(f)
 
 # Lines to run
-linhas_rodar = ["249"]
+linhas_rodar = ["371", "624", "SN624", "SV624"]
 # Em vez de apenas linhas específicas, como ["249"], podemos pegar todas as linhas únicas do arquivo trips
 # linhas_rodar = trips['trip_short_name'].unique().tolist()
 services_to_run = ["U_REG","S_REG", "D_REG"] # 

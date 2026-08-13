@@ -19,12 +19,12 @@ warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
 BASE_DADOS = Path("C:/R_SMTR/dados")
 
 ano_gtfs      = "2026"
-mes_gtfs      = "11"
-estudo_gtfs   = "03" #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+mes_gtfs      = "08"
+estudo_gtfs   = "02" #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 sufixo        = f"{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q"
 
 # Tipo de GTFS a processar: "brt", "sppo" ou "rio"
-gtfs_processar = "sppo"  # "brt" ou "sppo" ou "rio"
+gtfs_processar = "rio"  # "brt" ou "sppo" ou "rio"
 
 # Etapa(s) do GTFS Rio (usado apenas quando gtfs_processar == "rio")
 # Pode ser uma string única "ETAPA_01" ou múltiplas separadas por vírgula "ETAPA_01,ETAPA_02"

@@ -14,6 +14,7 @@ BASE_DADOS = Path("C:/R_SMTR/dados")
 BASE_RESULTADOS = Path("C:/R_SMTR/resultados")
 
 ano_gtfs = "2026"
+# endereco_gtfs = BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_combined2.zip"
 endereco_gtfs = BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_rio-de-janeiro_pub.zip"
 tipos_dia = ['du', 'sab', 'dom']
 

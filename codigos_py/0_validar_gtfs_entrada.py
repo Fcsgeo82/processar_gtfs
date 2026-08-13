@@ -13,8 +13,8 @@ BASE_DADOS = Path("C:/R_SMTR/dados")
 PASTA_RESULTADOS = Path("C:/R_SMTR/resultados/validacoes_snapshot")
 
 ano_gtfs = "2026"
-mes_gtfs = "11"
-estudo_gtfs = "04"
+mes_gtfs = "08"
+estudo_gtfs = "02"
 gtfs_processar = "sppo"  # "brt" ou "sppo" ou "rio"
 
 # Arquivo GTFS de entrada (pode ser _PROC.zip ou original)

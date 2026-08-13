@@ -22,8 +22,8 @@ ano_velocidade = '2025'
 mes_velocidade = '10'
 
 ano_gtfs = '2026'
-mes_gtfs = '12'
-estudo_gtfs = '05' #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+mes_gtfs = '08'
+estudo_gtfs = '02' #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 
 gtfs_processar = 'sppo'  # "brt" ou "sppo" ou "rio"
 

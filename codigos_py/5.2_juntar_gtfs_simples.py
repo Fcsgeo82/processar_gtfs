@@ -11,8 +11,8 @@ warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
 # CONFIGURAÇÕES
 # ==============================================================================
 INPUT_ZIPS = [
-    r"C:/R_SMTR/dados/gtfs/2026/0128_gtfs_jun_26_2E_ret1.zip",
-    r"C:/R_SMTR/dados/gtfs/2026/GTFS_Filtrado.zip",
+    r"C:/R_SMTR/dados/gtfs/2026/GTFS_Filtrado_141.zip",
+    r"C:/R_SMTR/dados/gtfs/2026/GTFS_Filtrado_143.zip",
 ]
 
 OUTPUT_ZIP = r"C:/R_SMTR/dados/gtfs/2026/gtfs_combined.zip"

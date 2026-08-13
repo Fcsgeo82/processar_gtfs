@@ -126,6 +126,18 @@ Os scripts formam um **pipeline sequencial** de processamento de dados GTFS para
 
 ---
 
+## 5️⃣.3️⃣ `5.3_juntar_gtfs_substituicao.py`
+**Objetivo:** Juntar dois arquivos GTFS garantindo que as linhas (`route_short_name`) do segundo GTFS substituam integralmente as linhas correspondentes no primeiro GTFS.
+
+| Item | Descrição |
+|------|-----------|
+| **Entrada** | Dois arquivos GTFS ZIP (`GTFS_1_PATH` e `GTFS_2_PATH`) |
+| **Processamento** | 1. Carrega ambos os GTFSs. <br>2. Identifica rotas redundantes no GTFS 1 com base no `route_short_name` do GTFS 2. <br>3. Remove essas rotas do GTFS 1 e aplica a limpeza em cascata (`clean_gtfs`) para remover registros órfãos. <br>4. Concatena os registros restantes do GTFS 1 com o GTFS 2. <br>5. Elimina duplicatas exatas. |
+| **Saída** | GTFS unificado salvo em `OUTPUT_ZIP` |
+| **Dependências** | `pandas`, `numpy`, `zipfile`, `pathlib` |
+
+---
+
 ## 9️⃣ `9_filtrar_gtfs_por_lista.py`
 **Objetivo:** Gerar um **GTFS filtrado** contendo apenas as trips presentes em uma lista de excepcionalidades/desvios, combinando cinco critérios de correspondência.
 
@@ -190,7 +202,7 @@ Os scripts formam um **pipeline sequencial** de processamento de dados GTFS para
 |------|-----------|
 | **Entrada** | GTFS público (`gtfs_rio-de-janeiro_pub.zip`) |
 | **Processamento** | 1. Filtra frescões e trips fantasma |
-|  | 2. Calcula extensões dos shapes via GIS (EPSG:31983) |
+|  | 2. Calculates extensões dos shapes via GIS (EPSG:31983) |
 |  | 3. Para cada tipo de dia (DU/SAB/DOM): |
 |  |    a. Expande `frequencies.txt` em partidas individuais (start → end, incrementando headway) |
 |  |    b. Extrai horários do primeiro ponto (`stop_sequence=0`) para linhas sem frequência |
@@ -211,7 +223,7 @@ Os scripts formam um **pipeline sequencial** de processamento de dados GTFS para
 | **Entrada** | GTFS público (`gtfs_rio-de-janeiro_pub.zip`) |
 | **Processamento** | 1. Filtra rotas SPPO (route_type=3 ou 700). |
 |  | 2. Remove viagens de exceção/desvio. |
-|  | 3. Calcula extensões geográficas de todos os shapes (EPSG:31983). |
+|  | 3. Calculates extensões geográficas de todos os shapes (EPSG:31983). |
 |  | 4. Consolida a maior extensão por (Serviço, Vista, Sentido). |
 | **Saída** | CSV em `resultados/extensoes/extensoes_YYYY-MM-QQQ.csv` |
 | **Dependências** | `pandas`, `geopandas`, `shapely` |
@@ -240,6 +252,7 @@ graph TD
     E5["5 - Juntar GTFS SPPO+BRT"]
     E51["5.1 - Juntar GTFS único modal"]
     E52["5.2 - Concatenar simples"]
+    E53["5.3 - Juntar com substituição"]
     E9["9 - Filtrar GTFS por Lista"]
     E10["10 - Juntar Dois GTFS"]
     PUB["gtfs_combi.zip + pub.zip"]
@@ -255,12 +268,13 @@ graph TD
     OUT8["extensoes.csv"]
     OUT1["Quadros horários"]
     LISTA["Lista de Excepcionalidades CSV/TSV"]
-
+ 
     ENTRADA --> A0
     ENTRADA --> B
     B --> D
     B --> E5
     B --> E51
+    B --> E53
     B --> E9
     D --> OUT4
     LISTA --> E9
@@ -271,6 +285,7 @@ graph TD
     E5 --> PUB
     E51 --> PUB
     E52 --> PUB
+    E53 --> PUB
     PUB --> F
     PUB --> G
     PUB --> H
@@ -279,13 +294,14 @@ graph TD
     G --> OUT7
     H --> OUT8
     A --> OUT1
-
+ 
     style A0 fill:#e07b39,color:#fff
     style B fill:#4a90d9,color:#fff
     style D fill:#e8a838,color:#fff
     style E5 fill:#50b848,color:#fff
     style E51 fill:#50b848,color:#fff
     style E52 fill:#50b848,color:#fff
+    style E53 fill:#50b848,color:#fff
     style E9 fill:#c0392b,color:#fff
     style E10 fill:#c0392b,color:#fff
     style F fill:#9b59b6,color:#fff
@@ -298,4 +314,4 @@ graph TD
 ```
 
 > [!NOTE]
-> O script **0** é opcional mas recomendado antes de iniciar o pipeline. O script **2** é a entrada principal para todos os modais. Os scripts **5**, **5.1** e **5.2** são alternativas de combinação; use o mais adequado ao contexto. Os scripts **4**, **6**, **7**, **8** e **8.1** são etapas de pós-processamento/exportação independentes. Os scripts **9** e **10** formam um sub-fluxo independente para geração de GTFSs com excepcionalidades/desvios selecionados.
+> O script **0** é opcional mas recomendado antes de iniciar o pipeline. O script **2** é a entrada principal para todos os modais. Os scripts **5**, **5.1**, **5.2** e **5.3** são alternativas de combinação; use o mais adequado ao contexto. Os scripts **4**, **6**, **7**, **8** e **8.1** são etapas de pós-processamento/exportação independentes. Os scripts **9** e **10** formam um sub-fluxo independente para geração de GTFSs com excepcionalidades/desvios selecionados.

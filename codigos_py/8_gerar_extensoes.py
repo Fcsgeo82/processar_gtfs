@@ -18,7 +18,7 @@ BASE_RESULTADOS = Path("C:/R_SMTR/resultados")
 
 ano_gtfs = "2026"
 mes_gtfs = "08"
-estudo_gtfs = "01"
+estudo_gtfs = "02"
 sufixo = f"{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q"
 
 endereco_gtfs = BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_rio-de-janeiro_pub.zip"
