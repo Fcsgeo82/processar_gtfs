@@ -12,23 +12,36 @@ import warnings
 
 warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
 
+import argparse
+
+# ==============================================================================
+# LEITURA DE CONFIGURAÇÃO (Streamlit)
+# ==============================================================================
+_parser = argparse.ArgumentParser()
+_parser.add_argument('--config', type=str, default='', help='Caminho para arquivo JSON de configuração')
+_args, _ = _parser.parse_known_args()
+_config = {}
+if _args.config:
+    with open(_args.config, 'r', encoding='utf-8') as _f:
+        _config = json.load(_f)
+
 # ==============================================================================
 # CONFIGURAÇÕES
 # ==============================================================================
 # Base directory for data - adjust this to your environment
-BASE_DADOS = Path("C:/R_SMTR/dados")
+BASE_DADOS = Path(_config.get("BASE_DADOS", "C:/R_SMTR/dados"))
 
-ano_velocidade = '2025'
-mes_velocidade = '10'
+ano_velocidade = _config.get("ano_velocidade", '2025')
+mes_velocidade = _config.get("mes_velocidade", '10')
 
-ano_gtfs = '2026'
-mes_gtfs = '08'
-estudo_gtfs = '02' #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+ano_gtfs = _config.get("ano_gtfs", '2026')
+mes_gtfs = _config.get("mes_gtfs", '08')
+estudo_gtfs = _config.get("estudo_gtfs", '02') #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 
-gtfs_processar = 'sppo'  # "brt" ou "sppo" ou "rio"
+gtfs_processar = _config.get("gtfs_processar", 'sppo')  # "brt" ou "sppo" ou "rio"
 
-endereco_gtfs = BASE_DADOS / f"gtfs/{ano_gtfs}/{gtfs_processar}_{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q.zip"
-velocidade_padrao_kmh = 15.0
+endereco_gtfs = Path(_config.get("endereco_gtfs", BASE_DADOS / f"gtfs/{ano_gtfs}/{gtfs_processar}_{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q.zip"))
+velocidade_padrao_kmh = float(_config.get("velocidade_padrao_kmh", 15.0))
 
 # ==============================================================================
 # FUNÇÕES AUXILIARES OTIMIZADAS

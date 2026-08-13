@@ -10,17 +10,31 @@ import warnings
 
 warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
 
+import argparse
+import json
+
+# ==============================================================================
+# LEITURA DE CONFIGURAÇÃO (Streamlit)
+# ==============================================================================
+_parser = argparse.ArgumentParser()
+_parser.add_argument('--config', type=str, default='', help='Caminho para arquivo JSON de configuração')
+_args, _ = _parser.parse_known_args()
+_config = {}
+if _args.config:
+    with open(_args.config, 'r', encoding='utf-8') as _f:
+        _config = json.load(_f)
+
 # ==============================================================================
 # CONFIGURAÇÕES
 # ==============================================================================
-BASE_DADOS = Path("C:/R_SMTR/dados")
-BASE_RESULTADOS = Path("C:/R_SMTR/resultados")
+BASE_DADOS = Path(_config.get("BASE_DADOS", "C:/R_SMTR/dados"))
+BASE_RESULTADOS = Path(_config.get("BASE_RESULTADOS", "C:/R_SMTR/resultados"))
 
-ano_gtfs = "2026"
+ano_gtfs = _config.get("ano_gtfs", "2026")
 # Novo formato de entrada: rio_YYYY-MM
-sufixo = f"rio_{ano_gtfs}-05"
+sufixo = _config.get("sufixo", f"rio_{ano_gtfs}-05")
 
-endereco_gtfs = BASE_DADOS / "gtfs" / ano_gtfs / f"{sufixo}.zip"
+endereco_gtfs = Path(_config.get("endereco_gtfs", BASE_DADOS / "gtfs" / ano_gtfs / f"{sufixo}.zip"))
 pasta_saida = BASE_RESULTADOS / "extensoes"
 caminho_saida = pasta_saida / f"extensoes_{sufixo}.csv"
 

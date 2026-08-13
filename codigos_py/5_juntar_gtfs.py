@@ -11,31 +11,42 @@ sys.stdout.reconfigure(encoding='utf-8')
 
 warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
 
+import argparse
+import json
+
+# ==============================================================================
+# LEITURA DE CONFIGURAÇÃO (Streamlit)
+# ==============================================================================
+_parser = argparse.ArgumentParser()
+_parser.add_argument('--config', type=str, default='', help='Caminho para arquivo JSON de configuração')
+_args, _ = _parser.parse_known_args()
+_config = {}
+if _args.config:
+    with open(_args.config, 'r', encoding='utf-8') as _f:
+        _config = json.load(_f)
+
 # ==============================================================================
 # CONFIGURAÇÕES
 # ==============================================================================
-BASE_DADOS = Path("C:/R_SMTR/dados")
+BASE_DADOS = Path(_config.get("BASE_DADOS", "C:/R_SMTR/dados"))
 
-ano_gtfs      = "2026"
-mes_gtfs      = "08"
-estudo_gtfs = "02" #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+ano_gtfs      = _config.get("ano_gtfs", "2026")
+mes_gtfs      = _config.get("mes_gtfs", "08")
+estudo_gtfs = _config.get("estudo_gtfs", "02") #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 sufixo        = f"{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q"
 
-gtfs_processar = 'sppo'  # "sppo" ou "rio"
+gtfs_processar = _config.get("gtfs_processar", 'sppo')  # "sppo" ou "rio"
 
-etapa_gtfs_rio = "ETAPA_01" # "ETAPA_01", "ETAPA_02", "ETAPA_03", "ETAPA_04" ou "ETAPA_05"
+etapa_gtfs_rio = _config.get("etapa_gtfs_rio", "ETAPA_01") # "ETAPA_01", "ETAPA_02", "ETAPA_03", "ETAPA_04" ou "ETAPA_05"
 
-endereco_sppo       = BASE_DADOS / f"gtfs/{ano_gtfs}/{gtfs_processar}_{sufixo}_PROC.zip"
-endereco_brt        = BASE_DADOS / f"gtfs/{ano_gtfs}/brt_{sufixo}_PROC.zip"
-endereco_gtfs_combi = BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_combi_{sufixo}.zip"
+endereco_sppo       = Path(_config.get("endereco_sppo", BASE_DADOS / f"gtfs/{ano_gtfs}/{gtfs_processar}_{sufixo}_PROC.zip"))
+endereco_brt        = Path(_config.get("endereco_brt", BASE_DADOS / f"gtfs/{ano_gtfs}/brt_{sufixo}_PROC.zip"))
+endereco_gtfs_combi = Path(_config.get("endereco_gtfs_combi", BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_combi_{sufixo}.zip"))
 
 # FILTRO DE LINHAS A EXCLUIR (usar trip_short_name)
-#linhas_excluir = ["SE100", "SE169", "SE238", "SE265", "SE298", "SE312", "SE324", "SE328", 
-#    "SE355", "SE363", "SE368", "SE383", "SE388", "SE393", "SE397", "SE399", 
-#    "SE410", "SE457", "SE474", "SE483", "SE550", "SE553", "SE554", "SEB232"  
-#]
-
-linhas_excluir = []
+linhas_excluir = _config.get("linhas_excluir", [])
+if isinstance(linhas_excluir, str):
+    linhas_excluir = [x.strip() for x in linhas_excluir.split(',') if x.strip()]
 
 if gtfs_processar.lower() == 'sppo':
     pasta_substituicao_combi = BASE_DADOS / "insumos/gtfs_combi"

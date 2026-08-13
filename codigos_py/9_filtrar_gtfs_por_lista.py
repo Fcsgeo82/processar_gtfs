@@ -11,22 +11,38 @@ import sys
 sys.stdout.reconfigure(encoding='utf-8')
 warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
 
+import argparse
+import json
+
+# ==============================================================================
+# LEITURA DE CONFIGURAÇÃO (Streamlit)
+# ==============================================================================
+_parser = argparse.ArgumentParser()
+_parser.add_argument('--config', type=str, default='', help='Caminho para arquivo JSON de configuração')
+_args, _ = _parser.parse_known_args()
+_config = {}
+if _args.config:
+    with open(_args.config, 'r', encoding='utf-8') as _f:
+        _config = json.load(_f)
+
 # ==============================================================================
 # CONFIGURAÇÕES
 # ==============================================================================
-BASE_DADOS = Path("C:/R_SMTR/dados")
+BASE_DADOS = Path(_config.get("BASE_DADOS", "C:/R_SMTR/dados"))
 
-ano_gtfs    = "2026"
-mes_gtfs    = "12"
-estudo_gtfs = "08" # ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+ano_gtfs    = _config.get("ano_gtfs", "2026")
+mes_gtfs    = _config.get("mes_gtfs", "12")
+estudo_gtfs = _config.get("estudo_gtfs", "08") # ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 sufixo      = f"{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q"
 
-endereco_gtfs = BASE_DADOS / f"gtfs/{ano_gtfs}/sppo_{sufixo}_PROC.zip"
-caminho_saida = BASE_DADOS / f"gtfs/{ano_gtfs}/sppo_{sufixo}_FILTRADO.zip"
+endereco_gtfs = Path(_config.get("endereco_gtfs", BASE_DADOS / f"gtfs/{ano_gtfs}/sppo_{sufixo}_PROC.zip"))
+caminho_saida = Path(_config.get("caminho_saida", BASE_DADOS / f"gtfs/{ano_gtfs}/sppo_{sufixo}_FILTRADO.zip"))
 
 # Filtrar por calendários específicos (service_id). Se vazio, utiliza todos.
 # Exemplo: ["U", "S", "D", "EXCEP"]
-CALENDARIOS_ALVO = ["EXCEP"]
+CALENDARIOS_ALVO = _config.get("CALENDARIOS_ALVO", ["EXCEP"])
+if isinstance(CALENDARIOS_ALVO, str):
+    CALENDARIOS_ALVO = [x.strip() for x in CALENDARIOS_ALVO.split(',') if x.strip()]
 
 # ==============================================================================
 # LISTA DE FILTRO
@@ -42,7 +58,7 @@ CALENDARIOS_ALVO = ["EXCEP"]
 # A coluna Extensão é usada apenas como referência e não entra no filtro.
 # ==============================================================================
 # A lista é proveniente da aba de alternativos da OS
-LISTA_FILTRO_RAW = """Serviço\tVista\tConsórcio\tSentido\tExtensão\tEvento
+LISTA_FILTRO_RAW = _config.get("LISTA_FILTRO_RAW", """Serviço\tVista\tConsórcio\tSentido\tExtensão\tEvento
 104\tSão Conrado - Terminal Gentileza\tIntersul\tIda\t27.085\t[desvio_feira]
 104\tSão Conrado - Terminal Gentileza\tIntersul\tVolta\t26.369\t[desvio_feira]
 107\tCentral - Urca\tIntersul\tIda\t12.468\t[desvio_obras]

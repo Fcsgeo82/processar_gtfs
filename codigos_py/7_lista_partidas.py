@@ -7,19 +7,36 @@ import geopandas as gpd
 from shapely.geometry import LineString
 from pathlib import Path
 
+import argparse
+import json
+
+# ============================================================================
+# LEITURA DE CONFIGURAÇÃO (Streamlit)
+# ============================================================================
+_parser = argparse.ArgumentParser()
+_parser.add_argument('--config', type=str, default='', help='Caminho para arquivo JSON de configuração')
+_args, _ = _parser.parse_known_args()
+_config = {}
+if _args.config:
+    with open(_args.config, 'r', encoding='utf-8') as _f:
+        _config = json.load(_f)
+
 # ============================================================================
 # CONFIGURAÇÕES INICIAIS
 # ============================================================================
-BASE_DADOS = Path("C:/R_SMTR/dados")
-BASE_RESULTADOS = Path("C:/R_SMTR/resultados")
+BASE_DADOS = Path(_config.get("BASE_DADOS", "C:/R_SMTR/dados"))
+BASE_RESULTADOS = Path(_config.get("BASE_RESULTADOS", "C:/R_SMTR/resultados"))
 
-ano_gtfs = "2026"
-# endereco_gtfs = BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_combined2.zip"
-endereco_gtfs = BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_rio-de-janeiro_pub.zip"
-tipos_dia = ['du', 'sab', 'dom']
+ano_gtfs = _config.get("ano_gtfs", "2026")
+endereco_gtfs = Path(_config.get("endereco_gtfs", BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_rio-de-janeiro_pub.zip"))
+tipos_dia = _config.get("tipos_dia", ['du', 'sab', 'dom'])
+if isinstance(tipos_dia, str):
+    tipos_dia = [x.strip() for x in tipos_dia.split(',') if x.strip()]
 
 # FILTRO DE LINHAS A EXCLUIR
-linhas_excluir = []
+linhas_excluir = _config.get("linhas_excluir", [])
+if isinstance(linhas_excluir, str):
+    linhas_excluir = [x.strip() for x in linhas_excluir.split(',') if x.strip()]
 
 # Pasta de saída
 pasta_saida = BASE_RESULTADOS / "partidas"

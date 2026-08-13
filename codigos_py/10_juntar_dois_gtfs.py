@@ -11,21 +11,35 @@ import sys
 sys.stdout.reconfigure(encoding='utf-8')
 warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
 
+import argparse
+import json
+
+# ==============================================================================
+# LEITURA DE CONFIGURAÇÃO (Streamlit)
+# ==============================================================================
+_parser = argparse.ArgumentParser()
+_parser.add_argument('--config', type=str, default='', help='Caminho para arquivo JSON de configuração')
+_args, _ = _parser.parse_known_args()
+_config = {}
+if _args.config:
+    with open(_args.config, 'r', encoding='utf-8') as _f:
+        _config = json.load(_f)
+
 # ==============================================================================
 # CONFIGURAÇÕES
 # ==============================================================================
-BASE_DADOS = Path("C:/R_SMTR/dados")
+BASE_DADOS = Path(_config.get("BASE_DADOS", "C:/R_SMTR/dados"))
 
-ano_gtfs    = "2026"
-mes_gtfs    = "12"
-estudo_gtfs = "08"  # ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+ano_gtfs    = _config.get("ano_gtfs", "2026")
+mes_gtfs    = _config.get("mes_gtfs", "12")
+estudo_gtfs = _config.get("estudo_gtfs", "08")  # ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 sufixo      = f"{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q"
 
 # GTFS de entrada: o GTFS filtrado tem PRIORIDADE em caso de chave duplicada
-GTFS_PRINCIPAL  = BASE_DADOS / f"gtfs/{ano_gtfs}/sppo_{sufixo}_FILTRADO.zip"
-GTFS_SECUNDARIO = BASE_DADOS / f"gtfs/{ano_gtfs}/sppo_{sufixo}_PROC.zip"
+GTFS_PRINCIPAL  = Path(_config.get("GTFS_PRINCIPAL", BASE_DADOS / f"gtfs/{ano_gtfs}/sppo_{sufixo}_FILTRADO.zip"))
+GTFS_SECUNDARIO = Path(_config.get("GTFS_SECUNDARIO", BASE_DADOS / f"gtfs/{ano_gtfs}/sppo_{sufixo}_PROC.zip"))
 
-GTFS_SAIDA = BASE_DADOS / f"gtfs/{ano_gtfs}/sppo_{sufixo}_COMBINADO.zip"
+GTFS_SAIDA = Path(_config.get("GTFS_SAIDA", BASE_DADOS / f"gtfs/{ano_gtfs}/sppo_{sufixo}_COMBINADO.zip"))
 
 # ==============================================================================
 # CHAVES PRIMÁRIAS POR TABELA GTFS

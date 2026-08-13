@@ -10,21 +10,37 @@ from shapely.geometry import LineString
 
 warnings.filterwarnings('ignore')
 
+import argparse
+import json
+
+# ==============================================================================
+# LEITURA DE CONFIGURAÇÃO (Streamlit)
+# ==============================================================================
+_parser = argparse.ArgumentParser()
+_parser.add_argument('--config', type=str, default='', help='Caminho para arquivo JSON de configuração')
+_args, _ = _parser.parse_known_args()
+_config = {}
+if _args.config:
+    with open(_args.config, 'r', encoding='utf-8') as _f:
+        _config = json.load(_f)
+
 # ==============================================================================
 # CONFIGURAÇÕES
 # ==============================================================================
-BASE_DADOS = Path("C:/R_SMTR/dados")
+BASE_DADOS = Path(_config.get("BASE_DADOS", "C:/R_SMTR/dados"))
 
-ano_gtfs = "2026"
-mes_gtfs = "08"
-estudo_gtfs = "02" # ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+ano_gtfs = _config.get("ano_gtfs", "2026")
+mes_gtfs = _config.get("mes_gtfs", "08")
+estudo_gtfs = _config.get("estudo_gtfs", "02") # ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 
-endereco_gtfs = BASE_DADOS / f"gtfs/{ano_gtfs}/sppo_{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q_PROC.zip"
-caminho_saida = BASE_DADOS / f"os/os_{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}_excep.csv"
+endereco_gtfs = Path(_config.get("endereco_gtfs", BASE_DADOS / f"gtfs/{ano_gtfs}/sppo_{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q_PROC.zip"))
+caminho_saida = Path(_config.get("caminho_saida", BASE_DADOS / f"os/os_{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}_excep.csv"))
 
 # Filtrar por calendários específicos (service_id). Se vazio, utiliza todos.
 # Exemplo: ["U", "S", "D", "EXCEP"]
-CALENDARIOS_ALVO = ["EXCEP"] 
+CALENDARIOS_ALVO = _config.get("CALENDARIOS_ALVO", ["EXCEP"]) 
+if isinstance(CALENDARIOS_ALVO, str):
+    CALENDARIOS_ALVO = [x.strip() for x in CALENDARIOS_ALVO.split(',') if x.strip()] 
 
 print("\n╔════════════════════════════════════════════════════════════════════════════╗")
 print("║              PROCESSAMENTO DE GTFS - TRAJETOS ALTERNATIVOS                 ║")

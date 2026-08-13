@@ -6,3 +6,4 @@ pyogrio
 pyarrow
 loguru
 tqdm
+streamlit

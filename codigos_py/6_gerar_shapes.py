@@ -11,18 +11,31 @@ import warnings
 warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
 warnings.filterwarnings('ignore', category=UserWarning) # Ignores some shapely warnings for M-coordinates if present
 
+import argparse
+import json
+
+# ==============================================================================
+# LEITURA DE CONFIGURAÇÃO (Streamlit)
+# ==============================================================================
+_parser = argparse.ArgumentParser()
+_parser.add_argument('--config', type=str, default='', help='Caminho para arquivo JSON de configuração')
+_args, _ = _parser.parse_known_args()
+_config = {}
+if _args.config:
+    with open(_args.config, 'r', encoding='utf-8') as _f:
+        _config = json.load(_f)
+
 # ==============================================================================
 # CONFIGURAÇÕES
 # ==============================================================================
-BASE_DADOS = Path("C:/R_SMTR/dados")
+BASE_DADOS = Path(_config.get("BASE_DADOS", "C:/R_SMTR/dados"))
 
-ano_gtfs = "2026"
-mes_gtfs = "08"
-estudo_gtfs = "02" #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+ano_gtfs = _config.get("ano_gtfs", "2026")
+mes_gtfs = _config.get("mes_gtfs", "08")
+estudo_gtfs = _config.get("estudo_gtfs", "02") #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 
-# endereco_gtfs_combi = BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_combined.zip"
-endereco_gtfs_combi = BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_rio-de-janeiro_pub.zip"
-pasta_shape_sppo = BASE_DADOS / f"shapes/{ano_gtfs}"
+endereco_gtfs_combi = Path(_config.get("endereco_gtfs_combi", BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_rio-de-janeiro_pub.zip"))
+pasta_shape_sppo = Path(_config.get("pasta_shape_sppo", BASE_DADOS / f"shapes/{ano_gtfs}"))
 
 print("\n╔════════════════════════════════════════════════════════════════════════════╗")
 print("║                       GERAÇÃO DE SHAPES (GIS)                              ║")

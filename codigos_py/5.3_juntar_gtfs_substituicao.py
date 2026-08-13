@@ -8,13 +8,27 @@ import warnings
 
 warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
 
+import argparse
+import json
+
+# ==============================================================================
+# LEITURA DE CONFIGURAÇÃO (Streamlit)
+# ==============================================================================
+_parser = argparse.ArgumentParser()
+_parser.add_argument('--config', type=str, default='', help='Caminho para arquivo JSON de configuração')
+_args, _ = _parser.parse_known_args()
+_config = {}
+if _args.config:
+    with open(_args.config, 'r', encoding='utf-8') as _f:
+        _config = json.load(_f)
+
 # ==============================================================================
 # CONFIGURAÇÕES
 # ==============================================================================
 # Caminhos dos arquivos GTFS de entrada e saída
-GTFS_1_PATH = r"C:/R_SMTR/dados/gtfs/2026/0143_gtfs_ago_26_1E_ret1.zip"
-GTFS_2_PATH = r"C:/R_SMTR/dados/gtfs/2026/GTFS_Filtrado_141.zip"
-OUTPUT_ZIP = r"C:/R_SMTR/dados/gtfs/2026/gtfs_combined2.zip"
+GTFS_1_PATH = Path(_config.get("GTFS_1_PATH", r"C:/R_SMTR/dados/gtfs/2026/0143_gtfs_ago_26_1E_ret1.zip"))
+GTFS_2_PATH = Path(_config.get("GTFS_2_PATH", r"C:/R_SMTR/dados/gtfs/2026/GTFS_Filtrado_141.zip"))
+OUTPUT_ZIP = Path(_config.get("OUTPUT_ZIP", r"C:/R_SMTR/dados/gtfs/2026/gtfs_combined2.zip"))
 
 # ==============================================================================
 # FUNÇÕES AUXILIARES

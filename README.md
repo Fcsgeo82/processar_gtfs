@@ -4,6 +4,26 @@ Os scripts formam um **pipeline sequencial** de processamento de dados GTFS para
 
 ---
 
+## 🖥️ Interface Gráfica (Streamlit)
+
+O projeto agora conta com uma aplicação web amigável desenvolvida em Streamlit para orquestrar a execução de todos os scripts do pipeline.
+
+### Como Iniciar a Aplicação
+1. Certifique-se de que as dependências estão instaladas (`pip install -r requirements.txt`).
+2. Execute o comando abaixo na raiz do projeto:
+```bash
+python -m streamlit run src/app.py
+```
+3. Acesse pelo navegador em `http://localhost:8501`.
+
+### Como Funciona
+A interface possui uma barra lateral (Sidebar) para configuração de variáveis globais como `BASE_DADOS`, ano, mês e quinzena/estudo. O menu principal está dividido em abas, agrupando os scripts por finalidade (por exemplo, todos os scripts de "Juntar GTFS" na aba 5). O usuário pode fornecer parâmetros via interface (campos de texto ou upload de arquivos) e o script executará em segundo plano, com os logs (stdout) sendo exibidos em tempo real na tela.
+
+### Execução via CLI (`--config`)
+Todos os 10 scripts do repositório foram refatorados para aceitar um argumento dinâmico `--config` apontando para um JSON temporário gerado pela interface com todos os parâmetros a serem aplicados. Caso nenhum `--config` seja passado (como na execução clássica pelo terminal), os scripts mantêm **retrocompatibilidade** e usam as variáveis _hardcoded_ definidas no topo de cada arquivo Python.
+
+---
+
 ## 0️⃣ `0_validar_gtfs_entrada.py`
 **Objetivo:** Validar a integridade do GTFS de entrada **antes** de iniciar o pipeline de processamento, detectando problemas antecipadamente.
 

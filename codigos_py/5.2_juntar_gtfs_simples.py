@@ -7,15 +7,31 @@ import warnings
 
 warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
 
+import argparse
+import json
+
+# ==============================================================================
+# LEITURA DE CONFIGURAÇÃO (Streamlit)
+# ==============================================================================
+_parser = argparse.ArgumentParser()
+_parser.add_argument('--config', type=str, default='', help='Caminho para arquivo JSON de configuração')
+_args, _ = _parser.parse_known_args()
+_config = {}
+if _args.config:
+    with open(_args.config, 'r', encoding='utf-8') as _f:
+        _config = json.load(_f)
+
 # ==============================================================================
 # CONFIGURAÇÕES
 # ==============================================================================
-INPUT_ZIPS = [
+INPUT_ZIPS = _config.get("INPUT_ZIPS", [
     r"C:/R_SMTR/dados/gtfs/2026/GTFS_Filtrado_141.zip",
     r"C:/R_SMTR/dados/gtfs/2026/GTFS_Filtrado_143.zip",
-]
+])
+if isinstance(INPUT_ZIPS, str):
+    INPUT_ZIPS = [x.strip() for x in INPUT_ZIPS.split('\n') if x.strip()]
 
-OUTPUT_ZIP = r"C:/R_SMTR/dados/gtfs/2026/gtfs_combined.zip"
+OUTPUT_ZIP = Path(_config.get("OUTPUT_ZIP", r"C:/R_SMTR/dados/gtfs/2026/gtfs_combined.zip"))
 
 # ==============================================================================
 # FUNÇÕES AUXILIARES
