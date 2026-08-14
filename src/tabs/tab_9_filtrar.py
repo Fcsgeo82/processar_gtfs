@@ -42,7 +42,7 @@ def render():
         
     st.markdown("---")
     st.subheader("Lista de Filtro")
-    st.markdown("Você pode colar os dados (formato TSV) na caixa de texto OU fazer upload de um CSV/TSV.")
+    st.markdown("Você pode colar os dados (CSV separado por vírgula **ou** TSV separado por tab) na caixa de texto OU fazer upload de um CSV/TSV. O separador é detectado automaticamente.")
     
     lista_default = """Serviço\tVista\tConsórcio\tSentido\tExtensão\tEvento
 104\tSão Conrado - Terminal Gentileza\tIntersul\tIda\t27.085\t[desvio_feira]
@@ -59,7 +59,7 @@ def render():
             st.error(f"Erro ao ler arquivo: {e}")
             lista_raw = lista_default
     else:
-        lista_raw = st.text_area("Dados (TSV)", value=lista_default, height=300, key="t9_lista_raw")
+        lista_raw = st.text_area("Dados (CSV/TSV)", value=lista_default, height=300, key="t9_lista_raw")
         
     if st.button("▶ Executar Script 9", key="btn_script_9"):
         config = {

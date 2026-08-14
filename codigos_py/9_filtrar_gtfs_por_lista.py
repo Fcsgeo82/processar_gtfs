@@ -32,7 +32,7 @@ BASE_DADOS = Path(_config.get("BASE_DADOS", "C:/R_SMTR/dados"))
 
 ano_gtfs    = _config.get("ano_gtfs", "2026")
 mes_gtfs    = _config.get("mes_gtfs", "12")
-estudo_gtfs = _config.get("estudo_gtfs", "08") # ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+estudo_gtfs = _config.get("estudo_gtfs", "16") # ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 sufixo      = f"{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q"
 
 endereco_gtfs = Path(_config.get("endereco_gtfs", BASE_DADOS / f"gtfs/{ano_gtfs}/sppo_{sufixo}_PROC.zip"))
@@ -57,72 +57,22 @@ if isinstance(CALENDARIOS_ALVO, str):
 #
 # A coluna Extensão é usada apenas como referência e não entra no filtro.
 # ==============================================================================
-# A lista é proveniente da aba de alternativos da OS
-LISTA_FILTRO_RAW = _config.get("LISTA_FILTRO_RAW", """Serviço\tVista\tConsórcio\tSentido\tExtensão\tEvento
-104\tSão Conrado - Terminal Gentileza\tIntersul\tIda\t27.085\t[desvio_feira]
-104\tSão Conrado - Terminal Gentileza\tIntersul\tVolta\t26.369\t[desvio_feira]
-107\tCentral - Urca\tIntersul\tIda\t12.468\t[desvio_obras]
-133\tLargo do Machado - Terminal Gentileza\tIntersul\tIda\t9.448\t[excepcionalidade]
-133\tLargo do Machado - Terminal Gentileza\tIntersul\tVolta\t12.740\t[excepcionalidade]
-161\tTerminal Gentileza - Ipanema\tIntersul\tIda\t27.355\t[desvio_feira]
-167\tTerminal Gentileza - Urca\tIntersul\tIda\t14.780\t[desvio_tunel]
-167\tTerminal Gentileza - Urca\tIntersul\tVolta\t17.418\t[desvio_tunel]
-169\tTerminal Gentileza - General Osório\tIntersul\tIda\t17.474\t[desvio_aterro]
-169\tTerminal Gentileza - General Osório\tIntersul\tVolta\t19.926\t[desvio_aterro]
-169\tTerminal Gentileza - General Osório\tIntersul\tIda\t16.783\t[desvio_tunel_e_desvio_aterro]
-169\tTerminal Gentileza - General Osório\tIntersul\tVolta\t20.779\t[desvio_tunel_e_desvio_aterro]
-169\tTerminal Gentileza - General Osório\tIntersul\tIda\t17.408\t[desvio_tunel]
-169\tTerminal Gentileza - General Osório\tIntersul\tVolta\t20.142\t[desvio_tunel]
-201\tSanta Alexandrina - Castelo\tIntersul\tIda\t7.136\t[desvio_lazer]
-201\tSanta Alexandrina - Castelo\tIntersul\tIda\t6.153\t[excepcionalidade]
-201\tSanta Alexandrina - Castelo\tIntersul\tVolta\t7.340\t[excepcionalidade]
-202\tRio Comprido - Castelo\tIntersul\tIda\t8.308\t[excepcionalidade]
-202\tRio Comprido - Castelo\tIntersul\tVolta\t9.012\t[excepcionalidade]
-249\tÁgua Santa - Carioca\tInternorte\tIda\t18.745\t[desvio_maracana]
-361\tRecreiro dos Bandeirantes - Castelo\tTranscarioca\tIda\t47.517\t[excepcionalidade]
-361\tRecreiro dos Bandeirantes - Castelo\tTranscarioca\tVolta\t45.942\t[excepcionalidade]
-371\tPraça Seca - Praça Tiradentes\tTranscarioca\tVolta\t28.312\t[desvio_maracana]
-371\tPraça Seca - Praça Tiradentes\tTranscarioca\tVolta\t29.512\t[desvio_lazer]
-371\tPraça Seca - Praça Tiradentes\tTranscarioca\tIda\t26.412\t[excepcionalidade]
-410\tSaens Peña - Gávea\tIntersul\tIda\t19.438\t[excepcionalidade]
-410\tSaens Peña - Gávea\tIntersul\tVolta\t20.818\t[excepcionalidade]
-426\tUsina - Jardim de Alah\tIntersul\tIda\t22.282\t[excepcionalidade]
-426\tUsina - Jardim de Alah\tIntersul\tVolta\t23.799\t[excepcionalidade]
-553\tRecreiro dos Bandeirantes - Rio Sul\tTranscarioca\tIda\t41.505\t[excepcionalidade]
-553\tRecreiro dos Bandeirantes - Rio Sul\tTranscarioca\tVolta\t38.749\t[excepcionalidade]
-624\tMariópolis - Praça da Bandeira\tInternorte\tIda\t35.231\t[eventos_climaticos]
-624\tMariópolis - Praça da Bandeira\tInternorte\tVolta\t39.039\t[eventos_climaticos]
-665\tPavuna - Saens Peña\tInternorte\tVolta\t27.542\t[desvio_feira]
-665\tPavuna - Saens Peña\tInternorte\tIda\t34.140\t[desvio_maracana_2]
-838\tTerminal Campo Grande - Terminal Magarça\tSanta Cruz\tIda\t13.990\t[eventos_climaticos]
-838\tTerminal Campo Grande - Terminal Magarça\tSanta Cruz\tVolta\t13.331\t[eventos_climaticos]
-910\tBananal - Irajá\tInternorte\tIda\t27.023\t[excepcionalidade_1]
-910\tBananal - Irajá\tInternorte\tIda\t27.353\t[excepcionalidade_2]
-913\tDel Castilho - Fundão\tInternorte\tIda\t16.808\t[excepcionalidade]
-913\tDel Castilho - Fundão\tInternorte\tVolta\t10.769\t[excepcionalidade]
-917\tPadre Miguel - Bonsucesso\tInternorte\tVolta\t29.034\t[eventos_climaticos]
-917\tPadre Miguel - Bonsucesso\tInternorte\tVolta\t29.163\t[eventos_climaticos_1]
-917\tPadre Miguel - Bonsucesso\tInternorte\tVolta\t29.427\t[excepcionalidade]
-919\tPavuna - Bonsucesso\tInternorte\tIda\t21.273\t[excepcionalidade]
-920\tPavuna - Bonsucesso\tInternorte\tIda\t19.234\t[excepcionalidade]
-920\tPavuna - Bonsucesso\tInternorte\tVolta\t18.135\t[excepcionalidade]
-961\tRio das Pedras - Recreio dos Bandeirantes\tTranscarioca\tIda\t27.431\t[excepcionalidade]
-961\tRio das Pedras - Recreio dos Bandeirantes\tTranscarioca\tVolta\t24.336\t[excepcionalidade]
-LECD131\tSão Conrado - Terminal Gentileza\tIntersul\tIda\t24.599\t[excepcionalidade]
-LECD147\tMetrô Pavuna - Saens Peña\tInternorte\tVolta\t33.080\t[desvio_feira]
-LECD147\tMetrô Pavuna - Saens Peña\tInternorte\tIda\t33.455\t[desvio_maracana_2]
-LECD151\tGrajaú - Leblon\tIntersul\tIda\t24.452\t[desvio_maracana_e_tunel]
-SN232\tLins de Vasconcelos - Castelo\tInternorte\tIda\t18.034\t[desvio_maracana]
-SN265\tMarechal Hermes - Castelo\tInternorte\tVolta\t32.588\t[desvio_tunel]
-SN624\tMariópolis - Praça da República\tInternorte\tIda\t42.500\t[eventos_climaticos]
-SN624\tMariópolis - Praça da República\tInternorte\tVolta\t41.516\t[eventos_climaticos]
-SV624\tMariópolis - Praça da Bandeira\tInternorte\tIda\t36.541\t[eventos_climaticos]
-SV624\tMariópolis - Praça da Bandeira\tInternorte\tVolta\t43.511\t[eventos_climaticos]
-SV917\tPadre Miguel - Bonsucesso\tInternorte\tVolta\t29.318\t[eventos_climaticos]
-SVB665\tPavuna - Saens Peña\tInternorte\tIda\t33.897\t[desvio_maracana_2]
-SVB665\tPavuna - Saens Peña\tInternorte\tIda\t34.270\t[excepcionalidade]
-SVB665\tPavuna - Saens Peña\tInternorte\tVolta\t28.518\t[excepcionalidade]
-"""
+# A lista é proveniente da aba de alternativos da OS.
+# Formato aceito: CSV separado por vírgula (,) ou TSV separado por tab (\t).
+# O separador é detectado automaticamente em parse_lista_filtro().
+_config_lista = _config.get("LISTA_FILTRO_RAW", None)
+if _config_lista:
+    LISTA_FILTRO_RAW = _config_lista
+else:
+    _lista_path = Path(_config.get(
+        "LISTA_FILTRO_PATH",
+        "C:/R_SMTR/resultados/lista_filtro/alternativos_155_faltam.csv"
+    ))
+    if _lista_path.exists():
+        with open(_lista_path, 'r', encoding='utf-8') as _f:
+            LISTA_FILTRO_RAW = _f.read()
+    else:
+        raise FileNotFoundError(f"Arquivo de lista de filtro não encontrado: {_lista_path}")
 
 # ==============================================================================
 # FUNÇÕES AUXILIARES
@@ -223,8 +173,19 @@ def clean_gtfs(gtfs_dict):
 
 
 def parse_lista_filtro(raw_text: str) -> pd.DataFrame:
-    """Lê o texto TSV da lista de filtro e retorna um DataFrame normalizado."""
-    df = pd.read_csv(io.StringIO(raw_text.strip()), sep='\t', dtype=str)
+    """Lê o texto da lista de filtro e retorna um DataFrame normalizada.
+
+    Aceita tanto CSV separado por vírgula (,) quanto TSV separado por tab (\\t).
+    O separador é detectado automaticamente a partir da linha de cabeçalho.
+    """
+    text = raw_text.strip()
+    # Detectar separador pela linha de cabeçalho: vírgula (CSV) ou tab (TSV)
+    cabecalho = text.splitlines()[0] if text else ''
+    if '\t' in cabecalho and cabecalho.count('\t') >= cabecalho.count(','):
+        sep = '\t'
+    else:
+        sep = ','
+    df = pd.read_csv(io.StringIO(text), sep=sep, dtype=str)
     df.columns = df.columns.str.strip()
 
     # Mapear Sentido → direction_id numérico como string

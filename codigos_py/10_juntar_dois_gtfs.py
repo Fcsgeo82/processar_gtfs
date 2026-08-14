@@ -32,7 +32,7 @@ BASE_DADOS = Path(_config.get("BASE_DADOS", "C:/R_SMTR/dados"))
 
 ano_gtfs    = _config.get("ano_gtfs", "2026")
 mes_gtfs    = _config.get("mes_gtfs", "12")
-estudo_gtfs = _config.get("estudo_gtfs", "08")  # ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+estudo_gtfs = _config.get("estudo_gtfs", "17")  # ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 sufixo      = f"{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q"
 
 # GTFS de entrada: o GTFS filtrado tem PRIORIDADE em caso de chave duplicada
