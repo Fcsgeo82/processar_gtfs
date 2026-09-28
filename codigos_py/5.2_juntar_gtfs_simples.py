@@ -25,13 +25,13 @@ if _args.config:
 # CONFIGURAÇÕES
 # ==============================================================================
 INPUT_ZIPS = _config.get("INPUT_ZIPS", [
-    r"C:/R_SMTR/dados/gtfs/2026/gtfs_combi_2026-09-01Q.zip",
-    r"C:/R_SMTR/dados/gtfs/2027/gtfs_combi_2027-08-04Q_rio_sem998.zip",
+    r"C:/R_SMTR/dados/gtfs/2028/gtfs_combi_2028-09-01Q_sppo.zip",
+    r"C:/R_SMTR/dados/gtfs/2028/gtfs_combi_2026-09-01Q_rio.zip",
 ])
 if isinstance(INPUT_ZIPS, str):
     INPUT_ZIPS = [x.strip() for x in INPUT_ZIPS.split('\n') if x.strip()]
 
-OUTPUT_ZIP = Path(_config.get("OUTPUT_ZIP", r"C:/R_SMTR/dados/gtfs/2027/gtfs_combined_combi.zip"))
+OUTPUT_ZIP = Path(_config.get("OUTPUT_ZIP", r"C:/R_SMTR/dados/gtfs/2026/gtfs_combined_combi.zip"))
 
 # ==============================================================================
 # FUNÇÕES AUXILIARES

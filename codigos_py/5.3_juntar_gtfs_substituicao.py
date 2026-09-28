@@ -26,9 +26,9 @@ if _args.config:
 # CONFIGURAÇÕES
 # ==============================================================================
 # Caminhos dos arquivos GTFS de entrada e saída
-GTFS_1_PATH = Path(_config.get("GTFS_1_PATH", r"C:/R_SMTR/dados/gtfs/2027/0152_gtfs_ago_26_2E_ret2.zip"))
-GTFS_2_PATH = Path(_config.get("GTFS_2_PATH", r"C:/R_SMTR/dados/gtfs/2027/GTFS_Filtrado.zip"))
-OUTPUT_ZIP = Path(_config.get("OUTPUT_ZIP", r"C:/R_SMTR/dados/gtfs/2026/gtfs_combined_868_CORRIGIDA.zip"))
+GTFS_1_PATH = Path(_config.get("GTFS_1_PATH", r"C:/R_SMTR/dados/gtfs/2026/gtfs_combi_2026-09-01Q_ret_versão_controle.zip"))
+GTFS_2_PATH = Path(_config.get("GTFS_2_PATH", r"C:/R_SMTR/dados/gtfs/2026/GTFS_Filtrado.zip"))
+OUTPUT_ZIP = Path(_config.get("OUTPUT_ZIP", r"C:/R_SMTR/dados/gtfs/2026/gtfs_combined_CORRIGIDA_COMBI.zip"))
 
 # ==============================================================================
 # FUNÇÕES AUXILIARES

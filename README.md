@@ -44,7 +44,7 @@ Todos os 10 scripts do repositório foram refatorados para aceitar um argumento 
 ---
 
 ## 1️⃣ `1_extrair_qh_especificado_no_gtfs.py`
-**Objetivo:** Extrair o Quadro Horário (QH) de linhas específicas, a partir do GTFS combinado.
+**Objetivo:** Extrair o Quadro Horário (QH) de faixas de frequências de linhas específicas, a partir do GTFS combinado.
 
 | Item | Descrição |
 |------|-----------|
@@ -53,6 +53,32 @@ Todos os 10 scripts do repositório foram refatorados para aceitar um argumento 
 | **Processamento** | Junta `frequencies` com `trips`, filtra por linha e serviço, identifica combinações únicas de (serviço, vista, calendário) |
 | **Saída** | Um CSV por combinação em `resultados/quadro_horario_extraido/YYYY/MM/qh_por_linha/QQ/` com colunas: `trip_id`, `trip_headsign`, `trip_short_name`, `start_time`, `end_time`, `headway_secs` |
 | **Dependências** | `pandas`, `zipfile`, `pathlib` |
+
+---
+
+## 1️⃣.1️⃣ `1.1_extrair_qh_partidas.py`
+**Objetivo:** Extrair o Quadro Horário (QH) com a **grade detalhada de viagens individuais / partidas** de cada linha/sentido/dia a partir do GTFS.
+
+| Item | Descrição |
+|------|-----------|
+| **Entrada** | Arquivo GTFS ZIP combinado (`gtfs_combi_YYYY-MM-QQ.zip`) — tabelas `trips.txt`, `frequencies.txt` e `stop_times.txt` |
+| **Filtros** | Lista de linhas (`linhas_rodar`) e calendários (`services_to_run`, ex: `U_REG`, `S_REG`, `D_REG`) |
+| **Processamento** | 1. Expande viagens programadas por faixas de frequência (`frequencies.txt`) pelo `headway_secs`.<br>2. Para viagens regulares (sem frequência), extrai o horário de partida no primeiro ponto em `stop_times.txt`.<br>3. Ordena cronologicamente por sentido/linha/dia e calcula `ordem_partida` e `intervalo_min`. |
+| **Saída** | Arquivos CSV sanitizados por combinação em `resultados/quadro_horario_extraido/YYYY/MM/qh_partidas_por_linha/QQ/` com colunas: `ordem_partida`, `trip_short_name`, `trip_headsign`, `service_id`, `direction_id`, `departure_time`, `intervalo_min`, `trip_id` |
+| **Dependências** | `pandas`, `zipfile`, `re`, `pathlib`, `json`, `argparse` |
+
+---
+
+## 1️⃣.2️⃣ `1.2_combinar_quadros_horarios.py`
+**Objetivo:** Combinar quadros de horários de diferentes serviços/calendários com recorte por faixa horária (ex.: gerar quadros de domingo `D_REG` aproveitando as faixas de dia útil `U_REG` entre 06h e 20h).
+
+| Item | Descrição |
+|------|-----------|
+| **Entrada** | Arquivos CSV de faixas gerados pelo script `1` (`qh_por_linha`) |
+| **Parâmetros** | `servico_origem` (ex: `U_REG`), `servico_destino` (ex: `D_REG`), `hora_inicio` (ex: `06:00:00`), `hora_fim` (ex: `20:00:00`), `linhas_rodar` |
+| **Processamento** | 1. Mantém faixas originais do serviço de destino antes de `hora_inicio` e após `hora_fim`, ajustando bordas que cruzam os limites.<br>2. Importa faixas do serviço de origem na janela `[hora_inicio, hora_fim)`, clipando nas bordas.<br>3. Se a linha não tiver destino original, cria o quadro contendo a faixa importada.<br>4. Ordena cronologicamente por `start_time`. |
+| **Saída** | Arquivos CSV no formato do Script 1 em `resultados/quadro_horario_extraido/YYYY/MM/qh_por_linha_combinado/QQ/` com colunas: `trip_id`, `trip_headsign`, `trip_short_name`, `start_time`, `end_time`, `headway_secs` |
+| **Dependências** | `pandas`, `pathlib`, `re`, `json`, `argparse` |
 
 ---
 

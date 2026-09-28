@@ -30,7 +30,7 @@ if _args.config:
 # ==============================================================================
 BASE_DADOS = Path(_config.get("BASE_DADOS", "C:/R_SMTR/dados"))
 
-ano_gtfs      = _config.get("ano_gtfs", "2026")
+ano_gtfs      = _config.get("ano_gtfs", "2028")
 mes_gtfs      = _config.get("mes_gtfs", "09")
 estudo_gtfs = _config.get("estudo_gtfs", "01") #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 sufixo = f"{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q"

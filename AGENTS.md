@@ -16,8 +16,10 @@ por aplicação Streamlit (`src/app.py`). Contém versões antigas em R (`codigo
 - `src/tabs/tab_*.py`: uma aba por etapa (validar, QH, ajustar ST, alternativos,
   juntar, shapes, partidas, extensões, filtrar, juntar dois).
 - `codigos_py/`: scripts Python do pipeline, numerados 0 a 10
-  (`0_validar_gtfs_entrada`, `1_extrair_qh`, `2_ajustar_stop_times`,
-  `4_trajetos_alternativos`, `5_juntar_gtfs` e variantes 5.1–5.4,
+  (`0_validar_gtfs_entrada`, `1_extrair_qh_especificado_no_gtfs` [faixas de frequência],
+  `1.1_extrair_qh_partidas` [grade de partidas detalhadas],
+  `1.2_combinar_quadros_horarios` [combina faixas entre serviços/dias por horário],
+  `2_ajustar_stop_times`, `4_trajetos_alternativos`, `5_juntar_gtfs` e variantes 5.1–5.4,
   `6_gerar_shapes`, `7_lista_partidas`, `8_gerar_extensoes` + 8.1,
   `9_filtrar_gtfs_por_lista`, `10_juntar_dois_gtfs`).
 - `codigos_R/`: versões antigas do pipeline em R (`datados/` = obsoletos).
