@@ -197,45 +197,6 @@ Todos os 10 scripts do repositório foram refatorados para aceitar um argumento 
 
 ---
 
-## 9️⃣ `9_filtrar_gtfs_por_lista.py`
-**Objetivo:** Gerar um **GTFS filtrado** contendo apenas as trips presentes em uma lista de excepcionalidades/desvios, combinando cinco critérios de correspondência.
-
-| Item | Descrição |
-|------|-----------|
-| **Entrada** | GTFS processado (`_PROC.zip`) + lista embutida no script (TSV com colunas Serviço, Vista, Consórcio, Sentido, Extensão, Evento) |
-| **Critério de filtro** | Junção por chave composta: `trip_short_name` + `route_long_name` + `agency_name` + `direction_id` + evento extraído do `trip_headsign` (`[...]`) |
-| **Processamento** | 1. Filtra trips pelo calendário alvo (padrão: `EXCEP`) |
-|  | 2. Enriquece trips com `route_long_name` e `agency_name` via join |
-|  | 3. Extrai o evento do `trip_headsign` e compõe a chave de junção |
-|  | 4. Aplica `clean_gtfs` em cascata para remover stop_times, shapes, stops e calendar_dates órfãos |
-|  | 5. Reporta entradas da lista sem match no GTFS |
-| **Saída** | `sppo_YYYY-MM-QQ_FILTRADO.zip` |
-| **Dependências** | `pandas`, `numpy`, `zipfile` |
-
-> [!TIP]
-> A coluna **Extensão** da lista de filtro é apenas referência — não entra na chave de correspondência. O script reporta explicitamente quais entradas da lista **não tiveram match** no GTFS.
-
----
-
-## 1️⃣0️⃣ `10_juntar_dois_gtfs.py`
-**Objetivo:** **Juntar dois arquivos GTFS** em um único, eliminando duplicatas com controle de precedência por chave primária GTFS.
-
-| Item | Descrição |
-|------|-----------|
-| **Entrada** | `GTFS_PRINCIPAL` (tem precedência) + `GTFS_SECUNDARIO` — tipicamente o GTFS filtrado + o GTFS completo |
-| **Estratégia de deduplicação** | Para cada tabela `.txt`: |
-|  | 1. Remove linhas 100% idênticas (`drop_duplicates` na linha inteira) |
-|  | 2. Remove conflitos de chave primária, mantendo o registro do PRINCIPAL (`keep='first'`) |
-| **Chaves primárias** | Definidas em `CHAVES_PRIMARIAS` por tabela: `trip_id` para trips, `[trip_id, stop_sequence]` para stop_times, `[shape_id, shape_pt_sequence]` para shapes, etc. |
-| **Pós-processamento** | Aplica `clean_gtfs` para remover registros órfãos resultantes da fusão |
-| **Saída** | `sppo_YYYY-MM-QQ_COMBINADO.zip` |
-| **Dependências** | `pandas`, `numpy`, `zipfile` |
-
-> [!IMPORTANT]
-> O GTFS definido em `GTFS_PRINCIPAL` **sempre vence** em caso de conflito de chave primária. Use o GTFS filtrado (saída do script 9) como principal para garantir que os trajetos alternativos corretos prevaleçam.
-
----
-
 ## 6️⃣ `6_gerar_shapes.py`
 **Objetivo:** Gerar **arquivos geoespaciais** (Shapefile + GeoPackage) dos trajetos (linhas) e pontos de parada a partir do GTFS público.
 
@@ -274,6 +235,30 @@ Todos os 10 scripts do repositório foram refatorados para aceitar um argumento 
 
 ---
 
+## 7️⃣.1️⃣ `7.1_resumo_os_domingo_du.py`
+**Objetivo:** Gerar tabela resumo de partidas por faixa horária para **Domingo** no formato da tabela de OS, combinando partidas de diferentes tipos de dia: importa as partidas de **Dia Útil** entre 06h e 20h e mantém as partidas de **Domingo** fora desse intervalo, para compor um único quadro de domingo ajustado.
+
+| Item | Descrição |
+|------|-----------|
+| **Entrada** | Arquivo `partidas_YYYY-MM-QQ.parquet` (ou `.csv`) gerado pelo Script 7 |
+| **Processamento** | 1. Faz combinação de partidas de diferentes tipos de dia: seleciona `tipo_dia == 'du'` entre 06:00:00 e 20:00:00 e `tipo_dia == 'dom'` antes de 06:00:00 e a partir de 20:00:00 para formar o quadro de Domingo ajustado.<br>2. Agrupa por (Serviço, Vista, Consórcio, Sentido, Extensão).<br>3. Pivota contagem de partidas pelas 14 faixas horárias padrão.<br>4. Intercala colunas de Partidas e Quilometragem (em branco), no formato da tabela de OS. |
+| **Saída** | `tabela_domingo_ajustada.xlsx` e `tabela_domingo_ajustada.csv` (formato OS com 33 colunas) |
+| **Dependências** | `pandas`, `openpyxl`, `pyarrow`, `pathlib`, `json`, `argparse` |
+
+---
+
+## 7️⃣.2️⃣ `7.2_combinador_partidas.py`
+**Objetivo:** Combinar partidas de diferentes tipos de dia no formato do arquivo de partidas gerado pelo Script 7. Gera um arquivo de partidas consolidado para Domingo, substituindo o bloco diurno (06:00:00–20:00:00, exclusivo) pelas partidas de Dia Útil, mantendo a madrugada e a noite do próprio Domingo.
+
+| Item | Descrição |
+|------|-----------|
+| **Entrada** | Arquivos CSV de partidas (`partidas_du.csv`, `partidas_dom.csv`) gerados pelo Script 7 |
+| **Processamento** | 1. Lê os arquivos de partidas de Dia Útil e Domingo.<br>2. Mantém apenas os serviços presentes em `partidas_dom.csv`.<br>3. Divide as partidas de Domingo em madrugada (< 06:00:00) e noite (>= 20:00:00).<br>4. Seleciona as partidas de Dia Útil na janela 06:00:00–20:00:00 (exclusivo).<br>5. Compatibiliza o campo `intervalo` nas transições (05:59→06:00 e 19:59→20:00) para manter consistência entre partidas consecutivas.<br>6. Concatena os blocos (Domingo madrugada + Dia Útil diurno + Domingo noite), ordenados por `departure_time` dentro de cada serviço/sentido. |
+| **Saída** | Arquivo CSV de partidas no formato do Script 7 (padrão: `quadros_dom_04-10.csv`) |
+| **Dependências** | `pandas` |
+
+---
+
 ## 8️⃣ `8_gerar_extensoes.py`
 **Objetivo:** Gerar uma listagem consolidada de linhas por sentido e vista, com o cálculo da maior extensão (em metros) para cada serviço.
 
@@ -297,6 +282,45 @@ Todos os 10 scripts do repositório foram refatorados para aceitar um argumento 
 | **Entrada** | GTFS em `dados/gtfs/YYYY/rio_YYYY-MM.zip` |
 | **Processamento** | Idêntico ao script 8, mas adaptado para o novo padrão de nomenclatura de arquivos. |
 | **Saída** | CSV em `resultados/extensoes/extensoes_rio_YYYY-MM.csv` |
+
+---
+
+## 9️⃣ `9_filtrar_gtfs_por_lista.py`
+**Objetivo:** Gerar um **GTFS filtrado** contendo apenas as trips presentes em uma lista de excepcionalidades/desvios, combinando cinco critérios de correspondência.
+
+| Item | Descrição |
+|------|-----------|
+| **Entrada** | GTFS processado (`_PROC.zip`) + lista embutida no script (TSV com colunas Serviço, Vista, Consórcio, Sentido, Extensão, Evento) |
+| **Critério de filtro** | Junção por chave composta: `trip_short_name` + `route_long_name` + `agency_name` + `direction_id` + evento extraído do `trip_headsign` (`[...]`) |
+| **Processamento** | 1. Filtra trips pelo calendário alvo (padrão: `EXCEP`) |
+|  | 2. Enriquece trips com `route_long_name` e `agency_name` via join |
+|  | 3. Extrai o evento do `trip_headsign` e compõe a chave de junção |
+|  | 4. Aplica `clean_gtfs` em cascata para remover stop_times, shapes, stops e calendar_dates órfãos |
+|  | 5. Reporta entradas da lista sem match no GTFS |
+| **Saída** | `sppo_YYYY-MM-QQ_FILTRADO.zip` |
+| **Dependências** | `pandas`, `numpy`, `zipfile` |
+
+> [!TIP]
+> A coluna **Extensão** da lista de filtro é apenas referência — não entra na chave de correspondência. O script reporta explicitamente quais entradas da lista **não tiveram match** no GTFS.
+
+---
+
+## 1️⃣0️⃣ `10_juntar_dois_gtfs.py`
+**Objetivo:** **Juntar dois arquivos GTFS** em um único, eliminando duplicatas com controle de precedência por chave primária GTFS.
+
+| Item | Descrição |
+|------|-----------|
+| **Entrada** | `GTFS_PRINCIPAL` (tem precedência) + `GTFS_SECUNDARIO` — tipicamente o GTFS filtrado + o GTFS completo |
+| **Estratégia de deduplicação** | Para cada tabela `.txt`: |
+|  | 1. Remove linhas 100% idênticas (`drop_duplicates` na linha inteira) |
+|  | 2. Remove conflitos de chave primária, mantendo o registro do PRINCIPAL (`keep='first'`) |
+| **Chaves primárias** | Definidas em `CHAVES_PRIMARIAS` por tabela: `trip_id` para trips, `[trip_id, stop_sequence]` para stop_times, `[shape_id, shape_pt_sequence]` para shapes, etc. |
+| **Pós-processamento** | Aplica `clean_gtfs` para remover registros órfãos resultantes da fusão |
+| **Saída** | `sppo_YYYY-MM-QQ_COMBINADO.zip` |
+| **Dependências** | `pandas`, `numpy`, `zipfile` |
+
+> [!IMPORTANT]
+> O GTFS definido em `GTFS_PRINCIPAL` **sempre vence** em caso de conflito de chave primária. Use o GTFS filtrado (saída do script 9) como principal para garantir que os trajetos alternativos corretos prevaleçam.
 
 ---
 
@@ -377,4 +401,4 @@ graph TD
 ```
 
 > [!NOTE]
-> O script **0** é opcional mas recomendado antes de iniciar o pipeline. O script **2** é a entrada principal para todos os modais. Os scripts **5**, **5.1**, **5.2** e **5.3** são alternativas de combinação; o script **5.4** elimina duplicatas em linhas regulares (preservando EXCEP) nos GTFS combinados/públicos. Os scripts **4**, **6**, **7**, **8** e **8.1** são etapas de pós-processamento/exportação independentes. Os scripts **9** e **10** formam um sub-fluxo independente para geração de GTFSs com excepcionalidades/desvios selecionados.
+> O script **0** é opcional mas recomendado antes de iniciar o pipeline. O script **2** é a entrada principal para todos os modais. Os scripts **5**, **5.1**, **5.2** e **5.3** são alternativas de combinação; o script **5.4** elimina duplicatas em linhas regulares (preservando EXCEP) nos GTFS combinados/públicos. Os scripts **4**, **6**, **7**, **7.1**, **7.2**, **8** e **8.1** são etapas de pós-processamento/exportação independentes: **7.1** e **7.2** combinam partidas de diferentes tipos de dia (Dia Útil × Domingo), respectivamente no formato da tabela de OS e no formato do arquivo de partidas gerado pelo script 7. Os scripts **9** e **10** formam um sub-fluxo independente para geração de GTFSs com excepcionalidades/desvios selecionados.

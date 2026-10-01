@@ -27,13 +27,13 @@ if _args.config:
 BASE_DADOS = Path(_config.get("BASE_DADOS", "C:/R_SMTR/dados"))
 BASE_RESULTADOS = Path(_config.get("BASE_RESULTADOS", "C:/R_SMTR/resultados"))
 
-ano_gtfs = _config.get("ano_gtfs", "2028")
-mes_gtfs = _config.get("mes_gtfs", '09')
-estudo_gtfs = _config.get("estudo_gtfs", '02') #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+ano_gtfs = _config.get("ano_gtfs", "2029")
+mes_gtfs = _config.get("mes_gtfs", '10')
+estudo_gtfs = _config.get("estudo_gtfs", '01') #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 
 sufixo        = f"{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q"
 
-endereco_gtfs = Path(_config.get("endereco_gtfs", BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_rio-de-janeiro_pub_ret_completo2.zip"))
+endereco_gtfs = Path(_config.get("endereco_gtfs", BASE_DADOS / f"gtfs/{ano_gtfs}/0164_gtfs_out_26_1E.zip"))
 tipos_dia = _config.get("tipos_dia", ['du', 'sab', 'dom'])
 if isinstance(tipos_dia, str):
     tipos_dia = [x.strip() for x in tipos_dia.split(',') if x.strip()]

@@ -34,9 +34,9 @@ BASE_DADOS = Path(_config.get("BASE_DADOS", "C:/R_SMTR/dados"))
 ano_velocidade = _config.get("ano_velocidade", '2025')
 mes_velocidade = _config.get("mes_velocidade", '10')
 
-ano_gtfs = _config.get("ano_gtfs", '2026')
-mes_gtfs = _config.get("mes_gtfs", '09')
-estudo_gtfs = _config.get("estudo_gtfs", '02') #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+ano_gtfs = _config.get("ano_gtfs", '2029')
+mes_gtfs = _config.get("mes_gtfs", '10')
+estudo_gtfs = _config.get("estudo_gtfs", '01') #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 
 gtfs_processar = _config.get("gtfs_processar", 'sppo')  # "brt" ou "sppo" ou "rio"
 

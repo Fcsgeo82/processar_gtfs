@@ -28,7 +28,7 @@ if _args.config:
 # CONFIGURAÇÕES
 # ==============================================================================
 # Caminho do GTFS de entrada no PC (exemplo com ou sem .zip)
-endereco_gtfs_raw = _config.get("endereco_gtfs", r"C:/R_SMTR/dados/GTFS/2027/gtfs_combi_2026-07-02Q.zip")
+endereco_gtfs_raw = _config.get("endereco_gtfs", r"C:/R_SMTR/dados/GTFS/2029/0164_gtfs_out_26_1E.zip")
 endereco_gtfs = Path(endereco_gtfs_raw)
 if endereco_gtfs.suffix.lower() != '.zip':
     endereco_gtfs = endereco_gtfs.with_suffix('.zip')

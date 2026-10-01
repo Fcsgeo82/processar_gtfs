@@ -5,6 +5,35 @@ Preferência: adicionar entradas no topo, datadas.
 
 ---
 
+## 2026-10-01 — Script combinador de partidas (7.2) e atualização de doc
+
+- Criado `codigos_py/7.2_combinador_partidas.py` (a partir do protótipo
+  `combinador_quadros.py`): combina partidas de tipos de dia diferentes no
+  formato do arquivo de partidas gerado pelo script 7.
+  - Mantém apenas serviços presentes em `partidas_dom`; madrugada (<06h) e noite
+    (>=20h) do Domingo, bloco diurno (06h–20h) do Dia Útil.
+  - Compatibiliza o campo `intervalo` nas transições 05:59→06:00 e 19:59→20:00.
+  - Entrada default: `quadros_du.csv` / `quadros_dom.csv`; saída `quadros_dom_04-10.csv`.
+- Documentação atualizada: `README.md` (seções 7.1 e 7.2 e nota do pipeline),
+  `CHANGELOG.md` e `AGENTS.md`. Descrição do 7.1 reforçada como combinação de
+  partidas de diferentes tipos de dia no formato da tabela de OS.
+
+---
+
+## 2026-09-28 — Criação do script de resumo de OS de domingo com dia útil (7.1)
+
+- Criado `codigos_py/7.1_resumo_os_domingo_du.py` para processar a base consolidada de partidas
+  (`partidas_YYYY-MM-QQ.parquet` ou `.csv` gerados pelo script 7) e gerar tabela resumo por faixa horária.
+- Regra de composição de Domingo:
+  - Partidas entre 06:00:00 e 20:00:00 (exclusivo) importadas de Dia Útil (`tipo_dia == 'du'`).
+  - Partidas fora do intervalo (< 06:00:00 ou >= 20:00:00) mantidas de Domingo (`tipo_dia == 'dom'`).
+- Agrupa por `(Serviço, Vista, Consórcio, Sentido, Extensão)` e pivota pelas 14 faixas horárias padrão,
+  intercalando contagem de partidas e colunas de quilometragem em branco.
+- Exporta tanto em Excel (`.xlsx`) quanto em CSV (`utf-8-sig`, separador `;`).
+- Arquivos gerados e validados em `C:\R_SMTR\resultados\OS_historico\2026_SET_1ºESTUDO_RETIFICAÇÃO\arquivos_os\tabela_domingo_ajustada.*`.
+
+---
+
 ## 2026-09-28 — Criação do script de combinação de quadros de horários (1.2)
 
 - Criado `codigos_py/1.2_combinar_quadros_horarios.py` para mesclar quadros de horários

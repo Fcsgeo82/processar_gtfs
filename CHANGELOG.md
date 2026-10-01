@@ -2,9 +2,21 @@
 
 Todas as alterações notáveis neste projeto serão documentadas neste arquivo.
 
+O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
+
 ## [Não lançado] - 2026-09-28
 
 ### Adicionado
+- Novo script `codigos_py/7.1_resumo_os_domingo_du.py`:
+  - Combina partidas de diferentes tipos de dia no formato da tabela de OS, gerando um resumo de partidas por faixa horária para Domingo a partir da base consolidada do Script 7 (`partidas.parquet` ou `partidas.csv`).
+  - Importa viagens de Dia Útil (`tipo_dia == 'du'`) na janela 06:00:00 às 20:00:00 e preserva viagens de Domingo (`tipo_dia == 'dom'`) na madrugada e noite.
+  - Pivota os dados pelas 14 faixas horárias operacionais padrão, intercalando colunas de Partidas e Quilometragem em branco.
+  - Exporta resultados em Excel (`.xlsx`) e CSV (`utf-8-sig`, delimitador `;`).
+- Novo script `codigos_py/7.2_combinador_partidas.py`:
+  - Combina partidas de diferentes tipos de dia no formato do arquivo de partidas gerado pelo Script 7.
+  - Gera um arquivo de partidas consolidado para Domingo: mantém a madrugada e a noite do Domingo e substitui o bloco diurno (06:00:00–20:00:00, exclusivo) pelas partidas de Dia Útil.
+  - Compatibiliza o campo `intervalo` nas transições entre os blocos (05:59→06:00 e 19:59→20:00).
+  - Exporta no mesmo formato do Script 7 (`trip_short_name`, `direction_id`, `departure_time`, `intervalo`, etc.).
 - Novo script `codigos_py/1.2_combinar_quadros_horarios.py`:
   - Combina quadros de horários entre diferentes serviços/calendários com recorte por faixa de horário.
   - Permite gerar novos quadros de domingo (`D_REG`) aproveitando faixas de dia útil (`U_REG`) entre 06:00:00 e 20:00:00 (exclusivo).

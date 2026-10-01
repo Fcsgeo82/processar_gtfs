@@ -140,3 +140,25 @@ Nesta sessão foi criado o script `5.4_eliminar_duplicatas_gtfs.py` no pipeline 
 
 - Adicionada a opção `"5.4 Eliminar Duplicatas GTFS"` na **Aba 5 (Juntar GTFS)** em `src/tabs/tab_5_juntar.py`.
 - Interface com inputs para o caminho do arquivo GTFS de entrada e caminho opcional de saída.
+
+---
+
+# CONTEXTO — Sessão de Desenvolvimento 2026-10-01
+
+## Resumo
+
+Fechamento dos scripts de combinação de partidas entre tipos de dia (7.1 e 7.2),
+ambos derivados da mesma regra: o quadro de Domingo é composto pela madrugada e
+pela noite do próprio Domingo e pelo bloco diurno (06h–20h) do Dia Útil.
+
+## Scripts
+
+- `7.1_resumo_os_domingo_du.py`: combina partidas de diferentes tipos de dia no
+  **formato da tabela de OS** (resumo por faixa horária, pivoteado por
+  serviço/vista/consórcio/sentido/extensão).
+- `7.2_combinador_partidas.py`: combina partidas de diferentes tipos de dia no
+  **formato do arquivo de partidas gerado pelo script 7** (lista de partidas com
+  `departure_time` e `intervalo`), substituindo o bloco diurno e compatibilizando
+  os intervalos nas transições 05:59→06:00 e 19:59→20:00.
+
+> O protótipo inicial dessa lógica está em `codigos_py/combinador_quadros.py`.
