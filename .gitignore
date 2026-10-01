@@ -20,5 +20,13 @@ __pycache__/
 error_log.txt
 shapes_invalidos_com_trips.csv
 
+# Dados de trabalho / amostras de teste (quadros e partidas geradas na raiz)
+quadros_du.csv
+quadros_dom.csv
+quadros_dom_*.csv
+partidas_du.csv
+partidas_sab.csv
+partidas_dom.csv
+
 # Outros
 CAPABILITIES_AND_AGENTS.md
