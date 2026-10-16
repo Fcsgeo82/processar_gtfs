@@ -28,5 +28,14 @@ partidas_du.csv
 partidas_sab.csv
 partidas_dom.csv
 
+# Relatórios de investigação (OS 184 x GTFS 0164) gerados na raiz
+celulas_fragmentacao_domingo.csv
+relatorio_plano184_vs_gtfs0164_domingo*.csv
+
+# Pasta de validação: ignorar bases e relatórios gerados
+validacao/*.zip
+validacao/*.csv
+validacao/*.parquet
+
 # Outros
 CAPABILITIES_AND_AGENTS.md

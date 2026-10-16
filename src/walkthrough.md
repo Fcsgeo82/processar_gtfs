@@ -5,7 +5,7 @@ O pipeline de processamento do GTFS foi completamente refatorado para suportar u
 ## O que foi feito:
 
 1. **Retrocompatibilidade e CLI**:
-   - Todos os 10 scripts principais (`0_validar_gtfs_entrada.py` a `10_juntar_dois_gtfs.py`) foram adaptados.
+   - Todos os 9 scripts principais (`1_extrair_qh_especificado_no_gtfs.py` a `10_juntar_dois_gtfs.py`) foram adaptados. O script `0_validar_gtfs_entrada.py` foi movido para o projeto externo `C:\github_repositories\validacao`.
    - Os scripts agora possuem suporte a argumentos via linha de comando (CLI) através da biblioteca `argparse`.
    - Utilizam a _flag_ `--config` para carregar um dicionário JSON com as configurações (ex: caminhos, ano, mês, quinzena/estudo).
    - A lógica original se mantém: se a flag não for fornecida, os scripts utilizam as variáveis globais _hardcoded_ que existiam anteriormente.

@@ -4,6 +4,26 @@ Todas as alterações notáveis neste projeto serão documentadas neste arquivo.
 
 O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
+## [Não lançado] - 2026-10-15
+
+### Adicionado
+- Novo script `codigos_py/1.3_qh_a_partir_de_partidas.py`:
+  - Gera quadros de horário factíveis no formato do Script 1 a partir de uma tabela agregada de contagens de partidas por linha/sentido/faixa (sem depender do GTFS).
+  - Aceita a tabela em dois formatos: **wide** (uma coluna por faixa horária, com melt automático para o formato interno) e **longo** (`Faixa` + `Partidas_Faixa`); colunas tolerantes a acento/caixa; `-`/vazio tratados como 0 (`traco_ausente`: `zerar`|`erro`).
+  - Deriva o `trip_headsign` a partir da vista (`Origem - Destino`): Ida → destino, Volta → origem, Circular → literal `Circular`.
+  - Por faixa com n>0, gera 1 banda com `h = (dur//n // granularidade)*granularidade` (default 300s; se `h==0`, usa o bruto `dur//n` — a contagem de partidas é sempre preservada) e `end = start + n*h` (sem vazamento da faixa).
+  - Gate duro antes de gravar: reexpansão = entrada, nenhuma banda fora da faixa, headway múltiplo da granularidade, total de partidas de entrada = saída.
+  - Saída: CSVs por quadro no formato idêntico ao Script 1 (`trip_id` vazio) em `qh_por_linha_partidas/`, mais `relatorio_bandas.csv` e `_resumo.txt`.
+- Exportação Excel no script `1.3` (config `gerar_excel`, default ligado):
+  - Um workbook `quadros_partidas_{service_id}.xlsx` com **uma aba por linha** (servico) e **um bloco por quadro** (sentido/headsign): cabeçalho `Linha` / `Trip headsign` / `Tipo dia` + tabela `Partida` | `Horário` | `Intervalo` (partidas expandidas das bandas, HH:MM:SS; primeira `Intervalo` = `--`).
+  - Gate específico: total de partidas expandidas no Excel deve bater com o total de saída (aborta se divergir).
+
+## [Não lançado] - 2026-10-06
+
+### Removido
+- Script `codigos_py/0_validar_gtfs_entrada.py`, a aba **0. Validar** da interface Streamlit (`src/tabs/tab_0_validar.py`) e a seção correspondente do `README.md`: movidos para o novo projeto independente `C:\github_repositories\validacao`.
+- Módulo `validacao/` (`validar_gtfs.py`, `README.md`, `CHANGELOG.md` e dados de exemplo): mesmo destino, agora na raiz do projeto `validacao`, que passa a documentar suas próprias alterações.
+
 ## [Não lançado] - 2026-09-28
 
 ### Adicionado

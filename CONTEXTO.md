@@ -162,3 +162,45 @@ pela noite do próprio Domingo e pelo bloco diurno (06h–20h) do Dia Útil.
   os intervalos nas transições 05:59→06:00 e 19:59→20:00.
 
 > O protótipo inicial dessa lógica está em `codigos_py/combinador_quadros.py`.
+
+---
+
+# CONTEXTO - Sessão de Desenvolvimento 2026-10-15
+
+## Resumo
+
+Criação do script `1.3` (QH factíveis a partir de tabela de contagens de
+partidas) e evoluções subsequentes no mesmo dia: exportação Excel dos quadros
+e compatibilização com o novo formato de entrada (wide). Documentação
+atualizada (README, CHANGELOG, AGENTS, memória).
+
+## Script
+
+- `codigos_py/1.3_qh_a_partir_de_partidas.py`: gera quadros de horário no
+  formato do script 1 a partir de uma tabela agregada de contagens de partidas
+  por linha/sentido/faixa, sem depender do GTFS. Evolução do plano
+  `PLANO_1.3_qh_a_partir_de_partidas.md`, com mudanças combinadas com o usuário.
+
+## Decisões
+
+- **Entrada:** tabela agregada (não lista de partidas). Formatos aceitos:
+  - **wide** (default, `partidas_pf_sppo_como_du.csv`): uma linha por
+    (servico, vista, consorcio, sentido) e uma coluna por faixa
+    (`00:00-01:00` … `23:00-24:00`); colunas de faixa derretidas (melt)
+    automaticamente para o formato longo interno;
+  - **longo** (`partidas_pf_rio.csv`): `Faixa` + `Partidas_Faixa`.
+  Colunas tolerantes a acento/caixa; `-`/vazio → 0 (config `traco_ausente`).
+- **`trip_headsign`:** derivado da vista (`Origem - Destino`) — Ida → destino,
+  Volta → origem, Circular → literal `Circular`. Validado contra o `trips.txt`
+  do GTFS (38/38 grupos Ida/Volta).
+- **Bandas:** por faixa com n>0, `h = (dur//n // g)*g` (g=300 default); se
+  `h==0` (intervalo bruto < 300s), usa o bruto `dur//n` — a invariante é a
+  **preservação da contagem de partidas**, o que cede é a granularidade.
+  `end = start + n*h` (sem vazamento da faixa). Usuário confirmou que o
+  fallback está correto como está (sem alteração).
+- **Saída:** CSVs por quadro idênticos ao script 1 (`trip_id` vazio, default
+  `service_id=F_REG`) + **Excel** `quadros_partidas_F_REG.xlsx` com uma aba
+  por linha e blocos por quadro (cabeçalho Linha/Trip headsign/Tipo dia +
+  tabela Partida|Horário|Intervalo, partidas expandidas). Gate duro antes de
+  gravar qualquer arquivo.
+- **Pendência:** sem aba Streamlit — execução via CLI/`--config`.

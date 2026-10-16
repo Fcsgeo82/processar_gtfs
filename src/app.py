@@ -56,7 +56,6 @@ st.session_state.gtfs_processar = st.sidebar.selectbox(
 
 # Criação das abas
 tabs = st.tabs([
-    "0. Validar", 
     "1. Extrair QH", 
     "2. Ajustar ST", 
     "4. Alternativos", 
@@ -69,7 +68,6 @@ tabs = st.tabs([
 ])
 
 # Importação preguiçosa (lazy loading) das abas para evitar recarregar tudo
-from src.tabs import tab_0_validar
 from src.tabs import tab_1_extrair_qh
 from src.tabs import tab_2_ajustar_st
 from src.tabs import tab_4_trajetos
@@ -81,22 +79,20 @@ from src.tabs import tab_9_filtrar
 from src.tabs import tab_10_juntar_dois
 
 with tabs[0]:
-    tab_0_validar.render()
-with tabs[1]:
     tab_1_extrair_qh.render()
-with tabs[2]:
+with tabs[1]:
     tab_2_ajustar_st.render()
-with tabs[3]:
+with tabs[2]:
     tab_4_trajetos.render()
-with tabs[4]:
+with tabs[3]:
     tab_5_juntar.render()
-with tabs[5]:
+with tabs[4]:
     tab_6_shapes.render()
-with tabs[6]:
+with tabs[5]:
     tab_7_partidas.render()
-with tabs[7]:
+with tabs[6]:
     tab_8_extensoes.render()
-with tabs[8]:
+with tabs[7]:
     tab_9_filtrar.render()
-with tabs[9]:
+with tabs[8]:
     tab_10_juntar_dois.render()

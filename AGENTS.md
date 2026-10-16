@@ -13,18 +13,32 @@ por aplicação Streamlit (`src/app.py`). Contém versões antigas em R (`codigo
 - `src/app.py`: interface Streamlit com abas para cada etapa do pipeline.
 - `src/runner.py`: executa scripts como subprocesso passando `--config <json>`;
   barra de progresso por tempo decorrido e logs em tempo real.
-- `src/tabs/tab_*.py`: uma aba por etapa (validar, QH, ajustar ST, alternativos,
+- `src/tabs/tab_*.py`: uma aba por etapa (QH, ajustar ST, alternativos,
   juntar, shapes, partidas, extensões, filtrar, juntar dois).
-- `codigos_py/`: scripts Python do pipeline, numerados 0 a 10
-  (`0_validar_gtfs_entrada`, `1_extrair_qh_especificado_no_gtfs` [faixas de frequência],
+- `codigos_py/`: scripts Python do pipeline, numerados 1 a 10
+  (`1_extrair_qh_especificado_no_gtfs` [faixas de frequência],
   `1.1_extrair_qh_partidas` [grade de partidas detalhadas],
   `1.2_combinar_quadros_horarios` [combina faixas entre serviços/dias por horário],
+  `1.3_qh_a_partir_de_partidas` [QH factíveis a partir de tabela de contagens
+  por linha/sentido/faixa — aceita formato longo (Faixa+Partidas) ou wide
+  (uma coluna por faixa, melt automático); headsign derivado da vista;
+  exporta CSVs por quadro + Excel com uma aba por linha; default F_REG;
+  sem aba Streamlit ainda — CLI/`--config`],
   `2_ajustar_stop_times`, `4_trajetos_alternativos`, `5_juntar_gtfs` e variantes 5.1–5.4,
   `6_gerar_shapes`, `7_lista_partidas` + 7.1 + 7.2, `8_gerar_extensoes` + 8.1,
   `9_filtrar_gtfs_por_lista`, `10_juntar_dois_gtfs`).
+- Projeto irmão `C:\github_repositories\validacao` (independente, sem git): os
+  validadores `0_validar_gtfs_entrada.py` (pró-pipeline) e `validar_gtfs.py`
+  (pós-pipeline, cruza GTFS × OS) saíram daqui em 2026-10-06; tem `README.md`
+  e `CHANGELOG.md` próprios.
 - `codigos_R/`: versões antigas do pipeline em R (`datados/` = obsoletos).
+- `validacao/`: scripts de validação pós-pipeline GTFS e cruzamento com OS (`validar_gtfs.py`).
 - `Iniciar_App.bat`: atalho de inicialização da aplicação.
 - `CONTEXTO.md`, `CAPABILITIES_AND_AGENTS.md`, `plano_de_implementacao.md`: docs.
+- `PLANO_1.3_qh_a_partir_de_partidas.md`: plano pronto para execução (2026-10-02) do
+  script `1.3` — gerar QH no formato do script 1 a partir da lista de partidas do 7/7.2.
+  Invariante: contagem de partidas por faixa preservada; headway regularizado.
+  Atenção: agrupar por `(ciclo, faixa)`, nunca só por `faixa` (a faixa dá a volta em 24h).
 
 ## Convenções
 - Scripts aceitam `--config <json>` e mantêm retrocompatibilidade com variáveis

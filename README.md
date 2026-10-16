@@ -24,25 +24,6 @@ Todos os 10 scripts do repositório foram refatorados para aceitar um argumento 
 
 ---
 
-## 0️⃣ `0_validar_gtfs_entrada.py`
-**Objetivo:** Validar a integridade do GTFS de entrada **antes** de iniciar o pipeline de processamento, detectando problemas antecipadamente.
-
-| Item | Descrição |
-|------|-----------|
-| **Entrada** | Arquivo GTFS ZIP original (SPPO, BRT ou Rio) — tabelas `routes.txt`, `trips.txt`, `stop_times.txt`, `calendar.txt`, `calendar_dates.txt`, `shapes.txt` |
-| **Validações** | 1. Todas as routes possuem pelo menos uma trip associada |
-|  | 2. Trips de excepcionalidade (com `[...]` no `trip_headsign`) seguem o padrão: sem acentos, espaços substituídos por `_`, apenas minúsculas e caracteres `[a-z0-9_]` |
-|  | 3. (Extra) Trips sem `route_id` preenchido |
-|  | 4. (Extra) Inventário de `service_id` utilizados |
-| **Saída** | Relatório CSV com timestamp em `resultados/validacoes_snapshot/validacao_gtfs_entrada_<tipo>_<sufixo>_<timestamp>.csv` |
-| **Retorno** | `sys.exit(0)` se todas as validações críticas passaram; `sys.exit(1)` se houver falhas |
-| **Dependências** | `pandas`, `zipfile`, `re`, `unicodedata`, `pathlib` |
-
-> [!TIP]
-> Execute este script antes do `2_ajustar_stop_times.py`. Ele gera sugestões automáticas de correção para os `trip_headsign` fora do padrão.
-
----
-
 ## 1️⃣ `1_extrair_qh_especificado_no_gtfs.py`
 **Objetivo:** Extrair o Quadro Horário (QH) de faixas de frequências de linhas específicas, a partir do GTFS combinado.
 
@@ -79,6 +60,22 @@ Todos os 10 scripts do repositório foram refatorados para aceitar um argumento 
 | **Processamento** | 1. Mantém faixas originais do serviço de destino antes de `hora_inicio` e após `hora_fim`, ajustando bordas que cruzam os limites.<br>2. Importa faixas do serviço de origem na janela `[hora_inicio, hora_fim)`, clipando nas bordas.<br>3. Se a linha não tiver destino original, cria o quadro contendo a faixa importada.<br>4. Ordena cronologicamente por `start_time`. |
 | **Saída** | Arquivos CSV no formato do Script 1 em `resultados/quadro_horario_extraido/YYYY/MM/qh_por_linha_combinado/QQ/` com colunas: `trip_id`, `trip_headsign`, `trip_short_name`, `start_time`, `end_time`, `headway_secs` |
 | **Dependências** | `pandas`, `pathlib`, `re`, `json`, `argparse` |
+
+---
+
+## 1️⃣.3️⃣ `1.3_qh_a_partir_de_partidas.py`
+**Objetivo:** Gerar quadros de horário **factíveis** no formato do Script 1 a partir de uma tabela agregada de contagens de partidas por linha/sentido/faixa (ex.: montada a partir do arquivo de partidas do Script 7), sem depender do GTFS.
+
+| Item | Descrição |
+|------|-----------|
+| **Entrada** | Tabela CSV de contagens (`caminho_partidas`), em **um dos dois formatos**: (a) **wide** — uma linha por (Serviço, Vista, Consórcio, Sentido) e uma coluna por faixa (`00:00-01:00` … `23:00-24:00`), formato default; (b) **longo** — uma linha por (Serviço, Sentido, Faixa) com as colunas `Faixa` e `Partidas_Faixa`. No formato wide as colunas de faixa são derretidas (melt) automaticamente. Colunas tolerantes a acento/caixa; `-` ou vazio em contagens tratados como 0 (`traco_ausente`: `zerar`\|`erro`). |
+| **Parâmetros** | `caminho_partidas` (default `partidas_pf_sppo_como_du.csv`), `service_id` (default `F_REG`), `granularidade_headway` (default 300s), `traco_ausente`, `linhas_rodar`, `gerar_excel` (default True), `nome_excel`, `tipo_dia`, `pasta_saida` |
+| **Processamento** | 1. Deriva o `trip_headsign` da vista (`Origem - Destino`): Ida → destino, Volta → origem, Circular → literal `Circular`.<br>2. Por cada faixa com n>0, gera 1 banda: `h = (dur//n // 300)*300` (se `h==0`, usa o bruto `dur//n` — a contagem é sempre preservada, o que cede é a granularidade); `start = início da faixa`; `end = start + n*h` (sem vazamento).<br>3. Gate duro antes de gravar: reexpansão = entrada, nenhuma banda fora da faixa, headway múltiplo da granularidade, total in = total out. |
+| **Saída** | (1) Um CSV por quadro no formato idêntico ao Script 1 (`trip_id` vazio) em `resultados/quadro_horario_extraido/YYYY/MM/qh_por_linha_partidas/QQ/` com colunas: `trip_id`, `trip_headsign`, `trip_short_name`, `start_time`, `end_time`, `headway_secs`; (2) um Excel `quadros_partidas_{service_id}.xlsx` com **uma aba por linha** (servico) e **um bloco por quadro** (cabeçalho `Linha`/`Trip headsign`/`Tipo dia` + tabela `Partida`\|`Horário`\|`Intervalo`, partidas expandidas em HH:MM:SS); (3) relatórios `relatorio_bandas.csv` e `_resumo.txt`. |
+| **Dependências** | `pandas`, `openpyxl`, `pathlib`, `re`, `json`, `argparse` |
+
+> [!NOTE]
+> Sem aba Streamlit ainda — executar via CLI: `python codigos_py/1.3_qh_a_partir_de_partidas.py [--config config.json]`.
 
 ---
 
@@ -236,6 +233,9 @@ Todos os 10 scripts do repositório foram refatorados para aceitar um argumento 
 ---
 
 ## 7️⃣.1️⃣ `7.1_resumo_os_domingo_du.py`
+
+> Este código contém erros e **deve ser evitado**. Mantido apenas para referência.
+
 **Objetivo:** Gerar tabela resumo de partidas por faixa horária para **Domingo** no formato da tabela de OS, combinando partidas de diferentes tipos de dia: importa as partidas de **Dia Útil** entre 06h e 20h e mantém as partidas de **Domingo** fora desse intervalo, para compor um único quadro de domingo ajustado.
 
 | Item | Descrição |
@@ -329,7 +329,6 @@ Todos os 10 scripts do repositório foram refatorados para aceitar um argumento 
 ```mermaid
 graph TD
     ENTRADA["GTFS Original SPPO/BRT/Rio"]
-    A0["0 - Validar GTFS (opcional)"]
     B["2 - Ajustar Stop Times GPS"]
     D["4 - Trajetos Alternativos"]
     E5["5 - Juntar GTFS SPPO+BRT"]
@@ -353,7 +352,6 @@ graph TD
     OUT1["Quadros horários"]
     LISTA["Lista de Excepcionalidades CSV/TSV"]
  
-    ENTRADA --> A0
     ENTRADA --> B
     B --> D
     B --> E5
@@ -381,7 +379,6 @@ graph TD
     H --> OUT8
     A --> OUT1
  
-    style A0 fill:#e07b39,color:#fff
     style B fill:#4a90d9,color:#fff
     style D fill:#e8a838,color:#fff
     style E5 fill:#50b848,color:#fff
@@ -401,4 +398,4 @@ graph TD
 ```
 
 > [!NOTE]
-> O script **0** é opcional mas recomendado antes de iniciar o pipeline. O script **2** é a entrada principal para todos os modais. Os scripts **5**, **5.1**, **5.2** e **5.3** são alternativas de combinação; o script **5.4** elimina duplicatas em linhas regulares (preservando EXCEP) nos GTFS combinados/públicos. Os scripts **4**, **6**, **7**, **7.1**, **7.2**, **8** e **8.1** são etapas de pós-processamento/exportação independentes: **7.1** e **7.2** combinam partidas de diferentes tipos de dia (Dia Útil × Domingo), respectivamente no formato da tabela de OS e no formato do arquivo de partidas gerado pelo script 7. Os scripts **9** e **10** formam um sub-fluxo independente para geração de GTFSs com excepcionalidades/desvios selecionados.
+> A validação do GTFS de entrada (script **0**) foi movida para o projeto externo `C:\github_repositories\validacao`, junto com o validador pós-pipeline `validar_gtfs.py`. O script **2** é a entrada principal para todos os modais. Os scripts **5**, **5.1**, **5.2** e **5.3** são alternativas de combinação; o script **5.4** elimina duplicatas em linhas regulares (preservando EXCEP) nos GTFS combinados/públicos. Os scripts **4**, **6**, **7**, **7.1**, **7.2**, **8** e **8.1** são etapas de pós-processamento/exportação independentes: **7.1** e **7.2** combinam partidas de diferentes tipos de dia (Dia Útil × Domingo), respectivamente no formato da tabela de OS e no formato do arquivo de partidas gerado pelo script 7. Os scripts **9** e **10** formam um sub-fluxo independente para geração de GTFSs com excepcionalidades/desvios selecionados.
