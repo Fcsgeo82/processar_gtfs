@@ -79,6 +79,38 @@ Todos os 10 scripts do repositório foram refatorados para aceitar um argumento 
 
 ---
 
+## 1️⃣.3️⃣.1️⃣ `1.3.1_conferir_partidas_geradas.py`
+**Objetivo:** Conferir de forma **independente** que os quadros gerados pelo Script 1.3 têm o mesmo número de partidas da tabela de entrada (rele a entrada e os `horarios_*.csv` do disco; não confia no `_resumo.txt` nem no `relatorio_bandas.csv` da geração).
+
+| Item | Descrição |
+|------|-----------|
+| **Entrada** | Tabela de contagens usada na geração (wide ou longo) + pasta de saída do 1.3 contendo os `horarios_*.csv` (e, opcionalmente, o Excel) |
+| **Parâmetros** | `caminho_partidas`, `pasta_saida`, `service_id` (default `F_REG`), `linhas_rodar` (deve refletir o filtro da geração), `traco_ausente`, `verificar_excel` (default True), `nome_excel` |
+| **Processamento** | 1. Rele a entrada (wide/melt ou longo) e deriva o headsign esperado por (servico, sentido).<br>2. Para cada grupo: valida existência do CSV (`FALTANDO`/`SOBRANDO`/`ÓRFÃO`), reexpande cada banda (`n=(end−start)/headway`) validando `headway≥1`, divisibilidade, `start` na faixa e `end≤fim da faixa` (`BANDA`).<br>3. Soma por (servico, sentido, faixa) e compara com a entrada (`OK`/`DIVERGENTE` com Δ).<br>4. Se `verificar_excel`: conta partidas por bloco do `.xlsx` e bate com a expansão dos CSVs (`EXCEL`). |
+| **Saída** | `relatorio_conferencia_partidas.csv` (uma linha por célula + anomalias) e `_conferencia_resumo.txt` na pasta conferida; exit code 0 = tudo OK, 1 = anomalia |
+| **Dependências** | `pandas`, `openpyxl`, `pathlib`, `re`, `json`, `argparse` |
+
+> [!NOTE]
+> Sem aba Streamlit ainda — executar via CLI: `python codigos_py/1.3.1_conferir_partidas_geradas.py --config config.json`.
+
+---
+
+## 1️⃣.4️⃣ `1.4_qh_pf_a_partir_do_gtfs.py`
+**Objetivo:** Gerar quadros de **ponto facultativo** (`F_REG`) no formato do Script 1 direto das frequências (`frequencies.txt`) de um GTFS, para toda a rede de ônibus convencional exceto MOBI-Rio: base **DU** (`U_REG`) nos consórcios Internorte/Intersul/Transcarioca/Santa Cruz e base **sábado** (`S_REG`) em GTU/TUSE.
+
+| Item | Descrição |
+|------|-----------|
+| **Entrada** | GTFS ZIP (default `0171_gtfs_out_26_1E_ret.zip` na raiz do repositório; `end_gtfs` na config) — lê `frequencies.txt`, `trips.txt`, `routes.txt`, `agency.txt` |
+| **Parâmetros** | `end_gtfs`, `service_id` (default `F_REG`), `mapa_base` (agency_id → service de origem: `22003/22002/22004/22005`→`U_REG`, `A2/B2`→`S_REG`), `agencias_excluidas` (default `["20001"]` MOBI-Rio inteira), `route_types_permitidos` (default `["700"]`), `linhas_rodar`, `pasta_saida`, `gerar_excel`, `nome_excel`, `tipo_dia` |
+| **Processamento** | 1. Merge `frequencies→trips→routes→agency` e filtros: agências-base, sem MOBI-Rio, `route_type=700` (exclui BRT 702 e Metrô 200), service_id igual ao do `mapa_base`.<br>2. Agrupa bandas por `(trip_short_name, trip_headsign)` — 1 CSV por grupo, service de saída `F_REG`.<br>3. Gate antes de gravar: bandas preservadas entrada×saída por (linha, headsign, start, end, headway), `headway≥1`, `end>start`, `n=ceil((end−start)/headway)≥1`, total de partidas in = out. |
+| **Saída** | Pasta própria `resultados/quadro_horario_extraido/YYYY/MM/qh_por_linha_pf_gtfs/QQ/`: (1) CSVs `horarios_{linha}_{headsign}_F_REG.csv` no formato do Script 1 (`trip_id` vazio); (2) Excel `quadros_partidas_F_REG.xlsx` (uma aba por linha, bloco por quadro com `Partida`\|`Horário`\|`Intervalo`); (3) `relatorio_bandas.csv` (com `service_id_origem` p/ auditoria) e `_resumo.txt` |
+| **Dependências** | `pandas`, `openpyxl`, `pathlib`, `zipfile`, `re`, `json`, `math`, `argparse` |
+
+> [!NOTE]
+> Sem aba Streamlit — executar via CLI: `python codigos_py/1.4_qh_pf_a_partir_do_gtfs.py [--config config.json]`.
+
+---
+
 ## 2️⃣ `2_ajustar_stop_times.py`
 **Objetivo:** Recalcular os horários de parada (`stop_times`) do GTFS usando **velocidades reais extraídas de dados GPS** de viagens realizadas.
 
@@ -217,17 +249,17 @@ Todos os 10 scripts do repositório foram refatorados para aceitar um argumento 
 
 | Item | Descrição |
 |------|-----------|
-| **Entrada** | GTFS público (`gtfs_rio-de-janeiro_pub.zip`) |
+| **Entrada** | GTFS público (`gtfs_combi_2026-10-02Q_RIO.zip`) |
 | **Processamento** | 1. Filtra frescões e trips fantasma |
 |  | 2. Calculates extensões dos shapes via GIS (EPSG:31983) |
-|  | 3. Para cada tipo de dia (DU/SAB/DOM): |
+|  | 3. Para cada tipo de dia (DU/SAB/DOM/PF — `pf` = ponto facultativo, `service_id` `F_REG`): |
 |  |    a. Expande `frequencies.txt` em partidas individuais (start → end, incrementando headway) |
 |  |    b. Extrai horários do primeiro ponto (`stop_sequence=0`) para linhas sem frequência |
 |  |    c. Enriquece com nome da rota, agência, extensão, faixa horária |
 |  |    d. Calcula intervalos entre partidas consecutivas |
 | **Saída** | Em `resultados/partidas/`: |
-|  | - `partidas_du.csv`, `partidas_sab.csv`, `partidas_dom.csv` (individuais com intervalo) |
-|  | - `partidas.csv` + `partidas.parquet` (consolidado de todos os dias) |
+|  | - `partidas_du.csv`, `partidas_sab.csv`, `partidas_dom.csv`, `partidas_pf.csv` (individuais com intervalo) |
+|  | - `partidas_YYYY-MM-QQ.csv` + `.parquet` (consolidado de todos os dias, coluna `tipo_dia`) |
 | **Dependências** | `pandas`, `numpy`, `geopandas`, `shapely`, `pyarrow` |
 
 ---

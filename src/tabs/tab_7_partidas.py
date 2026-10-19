@@ -10,9 +10,8 @@ def render():
     st.subheader("Parâmetros Específicos")
     
     base_dados = st.session_state.BASE_DADOS
-    ano = st.session_state.ano_gtfs
     
-    default_gtfs = f"{base_dados}/gtfs/{ano}/gtfs_rio-de-janeiro_pub.zip"
+    default_gtfs = f"{base_dados}/gtfs/2026/gtfs_combi_2026-10-02Q_RIO.zip"
     
     col1, col2 = st.columns(2)
     with col1:
@@ -29,9 +28,9 @@ def render():
     with col2:
         tipos_dia = st.multiselect(
             "Tipos de Dia (tipos_dia)",
-            ["du", "sab", "dom"],
-            default=["du", "sab", "dom"],
-            help="Quais dias processar",
+            ["du", "sab", "dom", "pf"],
+            default=["du", "sab", "dom", "pf"],
+            help="Quais dias processar (pf = ponto facultativo, service_id F_REG)",
             key="t7_tipos_dia"
         )
         linhas_excluir = st.text_area(

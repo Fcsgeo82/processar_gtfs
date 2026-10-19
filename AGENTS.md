@@ -24,8 +24,19 @@ por aplicação Streamlit (`src/app.py`). Contém versões antigas em R (`codigo
   (uma coluna por faixa, melt automático); headsign derivado da vista;
   exporta CSVs por quadro + Excel com uma aba por linha; default F_REG;
   sem aba Streamlit ainda — CLI/`--config`],
+  `1.3.1_conferir_partidas_geradas` [conferência independente dos quadros do 1.3
+  contra a entrada — reexpande bandas, compara (servico,sentido,faixa), confere
+  Excel; relatório + exit 0/1; sem aba Streamlit],
+  `1.4_qh_pf_a_partir_do_gtfs` [quadros de ponto facultativo (`F_REG`) direto do
+  `frequencies.txt` de um GTFS (default `0171_gtfs_out_26_1E_ret.zip` na raiz);
+  filtra `route_type=700`, exclui agência MOBI-Rio (`20001`) inteira; base DU
+  (`U_REG`) p/ Internorte/Intersul/Transcarioca/Santa Cruz e sábado (`S_REG`) p/
+  GTU/TUSE; saída própria `qh_por_linha_pf_gtfs/{estudo}Q/` com CSVs + Excel +
+  gate; sem aba Streamlit],
   `2_ajustar_stop_times`, `4_trajetos_alternativos`, `5_juntar_gtfs` e variantes 5.1–5.4,
-  `6_gerar_shapes`, `7_lista_partidas` + 7.1 + 7.2, `8_gerar_extensoes` + 8.1,
+  `6_gerar_shapes`, `7_lista_partidas` + 7.1 + 7.2 (tipos de dia `du`/`sab`/`dom`/`pf`
+  [ponto facultativo, `F_REG`]; `get_pattern` lança `ValueError` p/ token desconhecido),
+  `8_gerar_extensoes` + 8.1,
   `9_filtrar_gtfs_por_lista`, `10_juntar_dois_gtfs`).
 - Projeto irmão `C:\github_repositories\validacao` (independente, sem git): os
   validadores `0_validar_gtfs_entrada.py` (pró-pipeline) e `validar_gtfs.py`

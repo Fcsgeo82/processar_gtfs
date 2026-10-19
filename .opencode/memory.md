@@ -5,6 +5,55 @@ Preferência: adicionar entradas no topo, datadas.
 
 ---
 
+## 2026-10-16 — Script 7: novo tipo de dia `pf` (ponto facultativo)
+
+- Pedido: o script 7 passar a **ler e criar mais um calendário na saída — ponto
+  facultativo** — além de `du`/`sab`/`dom`. Definições confirmadas com o usuário:
+  token **`pf`**, entra no **default** de `tipos_dia`, caminho do GTFS **literal
+  `gtfs/2026/gtfs_combi_2026-10-02Q_RIO.zip`**, default da aba também atualizado.
+- Mudanças (`codigos_py/7_lista_partidas.py`): `get_pattern('pf')→'F'`
+  (casa só com `F_REG` no GTFS atual); `tipos_dia` default `['du','sab','dom','pf']`;
+  default de `endereco_gtfs` literal 2026 (o antigo interpolava `ano_gtfs`, cujo
+  default `2030` não resolve); `--config` com `utf-8-sig` (BOM quebra `json.load`);
+  **guard**: tipo desconhecido → `ValueError` (antes `return ''` fazia
+  `str.contains('')` casar com todos os trips).
+- Aba `src/tabs/tab_7_partidas.py`: default do campo GTFS →
+  `gtfs_combi_2026-10-02Q_RIO.zip` (literal 2026, `ano` da sessão pode ser 2030;
+  variável `ano` ficou sem uso e foi removida) + `pf` no multiselect.
+- **Verificação (temp, não toca `resultados/partidas`):** reexpansão independente
+  de `frequencies.txt` por `service_id` bate nos 4 tipos: du 2.165 (U_REG),
+  sab 2.021 (S_REG), dom 1.930 (D_REG), **pf 2.021 (F_REG, 410 trips)** — sem
+  vazamento. Coincidência pf=sab=2.021 é real na origem (`S_REG` também expande
+  2.021); arquivos diferem (`iguais=False`). Guard `['foo']` → exit 1.
+- `7.1`/`7.2` filtram `tipo_dia=='du'/'dom'` → ignoram `pf` (não precisaram de
+  mudança). `EXCEP` continua fora (nenhum padrão casa com ele).
+- Docs: README seção 7 (entrada/tipos/saídas), CHANGELOG `2026-10-16`, AGENTS.
+
+---
+
+## 2026-10-16 — Script 1.3.1: conferência independente das contagens (SPPO e RIO)
+
+- Criado `codigos_py/1.3.1_conferir_partidas_geradas.py` a pedido do usuário
+  ("confirmar se os quadros gerados estão com o mesmo número de partidas do
+  arquivo de entrada"): relê a entrada e os `horarios_*.csv` **do disco**,
+  reexpande as bandas (`n=(end−start)/headway`) e compara por
+  (servico, sentido, faixa); não confia nos artefatos da geração.
+- Anomalias: `FALTANDO`/`SOBRANDO`/`ÓRFÃO`, `BANDA` (headway<1, não divisível,
+  start fora da faixa, end vaza), `CELULA` (Δ), `EXCEL` (blocos vs expansão).
+  Relatório `relatorio_conferencia_partidas.csv` + `_conferencia_resumo.txt`
+  na pasta conferida; exit 0/1.
+- **Execuções (2026-10-16):**
+  - RIO (`partidas_pf_rio_como_sabado.csv` → `.../RIO/10/qh_por_linha_partidas/01Q`):
+    574 células, 2.021/2.021 partidas, 41 blocos Excel — **0 anomalias**.
+  - SPPO (`partidas_pf_sppo_como_du.csv` → `.../SPPO/10/qh_por_linha_partidas/01Q`):
+    10.766 células, 38.730/38.730 partidas, 768 blocos Excel — **0 anomalias**.
+- **Teste negativo:** cópia da pasta RIO com a última banda da 804 encurtada →
+  detectou `BANDA` (end<=start) + `CELULA` (delta −3), exit 1. Detecção confirmada.
+- Detalhe de implementação: `headway_secs` nos CSVs do 1.3 é total de segundos
+  (ex.: `3600`), não `HH:MM:SS` — o leitor aceita os dois formatos.
+
+---
+
 ## 2026-10-15 — Documentação do script 1.3 atualizada
 
 - `README.md`: nova seção `1.3_qh_a_partir_de_partidas.py` (tabela no padrão
@@ -260,3 +309,25 @@ Preferência: adicionar entradas no topo, datadas.
 - Ajuste no check 2.3 de frequencies: trips com service_id == EXCEP não exigem frequencies (regra de negócio).
 - Ajuste no check 2.3: aceita viagens regulares modeladas como timetable (com horários definidos em stop_times.txt sem frequencies.txt, como na linha 899/2613/2614).
 - Ajuste no check 3.2: viagens com service_id == EXCEP aceitam linhas do padrão TP (4 dígitos seguidos de TP, ex: 2308TP), além do padrão [evento] no headsign.
+
+---
+
+## 2026-10-19 — Quadros de ponto facultativo a partir do GTFS (1.4)
+
+- Criado `codigos_py/1.4_qh_pf_a_partir_do_gtfs.py`: gera quadros `F_REG` direto do
+  `frequencies.txt` de um GTFS (default `0171_gtfs_out_26_1E_ret.zip` na raiz),
+  no mesmo formato de saída do script 1/1.3.
+- Regras combinadas com o usuário:
+  - Excluir agência MOBI-Rio (`20001`) **inteira** (qualquer route_type);
+  - Filtrar globalmente `route_type=700` (exclui BRT 702 e Metrô 200);
+  - Base de partidas: DU (`U_REG`) p/ Internorte `22003`, Intersul `22002`,
+    Transcarioca `22004`, Santa Cruz `22005`; sábado (`S_REG`) p/ GTU `A2` e TUSE `B2`
+    (`mapa_base` configurável);
+  - Pasta de saída própria `qh_por_linha_pf_gtfs/{estudo}Q/` (não mistura com o 1.3);
+    sem aba Streamlit (CLI/`--config`).
+- Agrupa bandas por `(trip_short_name, trip_headsign)`; gate antes de gravar
+  (bandas preservadas entrada×saída, `n=ceil((end−start)/headway)≥1`, total in=out).
+- Execução real: 9.519 bandas → **804 quadros**, 40.744 partidas, gate OK;
+  Excel 429 abas. Rotas sem bandas na base esperada (aviso): `SP766`, `899`,
+  `SV899`, `LECD126`. Amostras conferidas (249 e 821) batem com o GTFS.
+- Documentação: nova seção 1.4 no `README.md` e entrada em `AGENTS.md`.

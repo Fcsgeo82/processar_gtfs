@@ -27,14 +27,14 @@ if _args.config:
 BASE_DADOS = Path(_config.get("BASE_DADOS", "C:/R_SMTR/dados"))
 BASE_RESULTADOS = Path(_config.get("BASE_RESULTADOS", "C:/R_SMTR/resultados"))
 
-ano_gtfs = _config.get("ano_gtfs", "2030")
+ano_gtfs = _config.get("ano_gtfs", "2026")
 mes_gtfs = _config.get("mes_gtfs", '10')
-estudo_gtfs = _config.get("estudo_gtfs", '01') #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+estudo_gtfs = _config.get("estudo_gtfs", '02') #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 
 sufixo        = f"{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q"
 
-endereco_gtfs = Path(_config.get("endereco_gtfs", BASE_DADOS / f"gtfs/{ano_gtfs}/0171_gtfs_out_26_1E.zip")) # Alterar o nome do arquivo alvo
-tipos_dia = _config.get("tipos_dia", ['du', 'sab', 'dom'])
+endereco_gtfs = Path(_config.get("endereco_gtfs", BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_combi_2026-10-02Q_COMPLETO.zip")) # Alterar o nome do arquivo alvo
+tipos_dia = _config.get("tipos_dia", ['du', 'sab', 'dom', 'pf'])
 if isinstance(tipos_dia, str):
     tipos_dia = [x.strip() for x in tipos_dia.split(',') if x.strip()]
 
@@ -91,6 +91,7 @@ def get_pattern(tipo_dia):
     if tipo_dia == 'du': return 'U'
     if tipo_dia == 'sab': return 'S'
     if tipo_dia == 'dom': return 'D'
+    if tipo_dia == 'pf': return 'F'
     return ''
 
 def horario_to_timedelta(hk_str):

@@ -4,6 +4,29 @@ Todas as alterações notáveis neste projeto serão documentadas neste arquivo.
 
 O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
+## [Não lançado] - 2026-10-19
+
+### Adicionado
+- Novo script `codigos_py/1.4_qh_pf_a_partir_do_gtfs.py`:
+  - Gera quadros de **ponto facultativo** (`F_REG`) no formato do Script 1 direto do `frequencies.txt` de um GTFS (default `0171_gtfs_out_26_1E_ret.zip` na raiz do repositório).
+  - Filtros: agência MOBI-Rio (`20001`) excluída inteira; `route_type=700` apenas (exclui BRT 702 e Metrô 200); base de partidas por `mapa_base` — DU (`U_REG`) em Internorte/Intersul/Transcarioca/Santa Cruz e sábado (`S_REG`) em GTU/TUSE.
+  - Agrupa bandas por `(trip_short_name, trip_headsign)`; gate antes de gravar (bandas preservadas entrada×saída, `n=ceil((end−start)/headway)≥1`, total de partidas in = out).
+  - Saída própria em `qh_por_linha_pf_gtfs/{estudo}Q/`: CSVs por quadro + Excel `quadros_partidas_F_REG.xlsx` (uma aba por linha) + `relatorio_bandas.csv` (com `service_id_origem`) e `_resumo.txt`; sem aba Streamlit (CLI/`--config`).
+  - Execução real no 0171: 9.519 bandas → 804 quadros, 40.744 partidas, gate OK; rotas sem bandas na base esperada (`SP766`, `899`, `SV899`, `LECD126`) registradas como aviso no `_resumo.txt`.
+
+## [Não lançado] - 2026-10-16
+
+### Alterado
+- Script `codigos_py/7_lista_partidas.py` — novo tipo de dia **ponto facultativo** (`pf`):
+  - `get_pattern`: `pf` → padrão `'F'` (casa com o `service_id` `F_REG` do GTFS); tipo desconhecido agora lança `ValueError` listando os tokens válidos (antes retornava `''` e `str.contains('')` casava com **todos** os trips).
+  - Default de `tipos_dia` ampliado para `['du', 'sab', 'dom', 'pf']`; saída `partidas_pf.csv` (indivíduo) e linhas com `tipo_dia='pf'` no consolidado `partidas_{sufixo}.csv/.parquet`.
+  - Default de `endereco_gtfs` trocado para o GTFS corrente `gtfs/2026/gtfs_combi_2026-10-02Q_RIO.zip` (literal, sem interpolar `ano_gtfs`).
+  - Leitura do `--config` robusta a BOM (`utf-8-sig`).
+- Aba `src/tabs/tab_7_partidas.py`:
+  - Default do campo "GTFS Entrada" aponta para `gtfs_combi_2026-10-02Q_RIO.zip`.
+  - Multiselect `tipos_dia` com opção/default `pf` (help: ponto facultativo, `service_id F_REG`).
+- Verificado em pasta temporária (não toca `resultados/partidas`): reexpansão independente de `frequencies.txt` por `service_id` bate para os 4 tipos (du 2.165/U_REG, sab 2.021/S_REG, dom 1.930/D_REG, pf 2.021/F_REG), pf sem vazamento de outros serviços; guard `tipos_dia=['foo']` → exit 1. `7.1`/`7.2` filtram `== 'du'/'dom'` e ignoram `pf`.
+
 ## [Não lançado] - 2026-10-15
 
 ### Adicionado
@@ -17,6 +40,10 @@ O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Exportação Excel no script `1.3` (config `gerar_excel`, default ligado):
   - Um workbook `quadros_partidas_{service_id}.xlsx` com **uma aba por linha** (servico) e **um bloco por quadro** (sentido/headsign): cabeçalho `Linha` / `Trip headsign` / `Tipo dia` + tabela `Partida` | `Horário` | `Intervalo` (partidas expandidas das bandas, HH:MM:SS; primeira `Intervalo` = `--`).
   - Gate específico: total de partidas expandidas no Excel deve bater com o total de saída (aborta se divergir).
+- Novo script `codigos_py/1.3.1_conferir_partidas_geradas.py`:
+  - Conferência independente dos quadros gerados pelo `1.3` contra a tabela de entrada: relê a entrada (wide/longo) e os `horarios_*.csv` do disco, reexpande as bandas e compara contagens por (servico, sentido, faixa).
+  - Detecta anomalias `FALTANDO`/`SOBRANDO`/`ÓRFÃO` (grupos e arquivos), `BANDA` (headway < 1, não divisível, start fora da faixa, end vaza da faixa) e divergências `CELULA` (com Δ); confere também o Excel (blocos por quadro vs expansão dos CSVs).
+  - Grava `relatorio_conferencia_partidas.csv` + `_conferencia_resumo.txt` na pasta conferida; exit code 0/1 (CI-friendly). Validado em SPPO (10.766 células / 38.730 partidas / 768 blocos Excel) e RIO (574 células / 2.021 partidas / 41 blocos Excel), ambos 0 anomalias; teste negativo confirmou detecção (exit 1).
 
 ## [Não lançado] - 2026-10-06
 
