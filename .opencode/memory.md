@@ -5,6 +5,27 @@ Preferência: adicionar entradas no topo, datadas.
 
 ---
 
+## 2026-10-20 — `trip_id` vazio nos quadros é por design (Sigmob); "decimais" no 7 = segundos do GPS
+
+- **Confirmado pelo usuário:** a coluna `trip_id` dos CSVs de QH sai **vazio por
+  design** — é preenchida ao subir o quadro no sistema **Sigmob** e salvar. Nada
+  a corrigir no 1.2 (nem no 1): `1_extrair_qh_especificado_no_gtfs.py:95` já
+  grava `trip_id = ""`, e o 1.2 só preserva o formato de 6 colunas (cabeçalho
+  espelha o `frequencies.txt`). Nenhum script do `codigos_py/` lê
+  `qh_por_linha_combinado` — o consumo é Sigmob/manual.
+- **Diagnóstico (sem alteração, decisão do usuário de mudar de assunto):**
+  "partidas com decimais" no script 7 são **segundos ≠ 00** vindos do
+  `stop_times.txt` ajustado por GPS (script 2), herdados verbatim pelas linhas
+  regulares (`7_lista_partidas.py:201-206`); ex.: 2.472 de 147.554 no
+  `partidas_2026-10-02Q.csv`. Frequências ficam limpas (headways múltiplos de
+  60). Correção proposta e **não aplicada**: `.round('min')` após
+  `horario_to_timedelta`.
+- **Defaults do 1.2 alterados pelo usuário (não commitados):** `ano_gtfs`
+  2029→2030, `estudo_gtfs` 01→02, `hora_fim` 20:00→21:00, `linhas_rodar` lista
+  fixa → `[]` (todas as linhas).
+
+---
+
 ## 2026-10-16 — Script 7: novo tipo de dia `pf` (ponto facultativo)
 
 - Pedido: o script 7 passar a **ler e criar mais um calendário na saída — ponto

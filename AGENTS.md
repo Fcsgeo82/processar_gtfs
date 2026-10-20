@@ -18,7 +18,9 @@ por aplicação Streamlit (`src/app.py`). Contém versões antigas em R (`codigo
 - `codigos_py/`: scripts Python do pipeline, numerados 1 a 10
   (`1_extrair_qh_especificado_no_gtfs` [faixas de frequência],
   `1.1_extrair_qh_partidas` [grade de partidas detalhadas],
-  `1.2_combinar_quadros_horarios` [combina faixas entre serviços/dias por horário],
+  `1.2_combinar_quadros_horarios` [combina faixas entre serviços/dias por horário;
+  defaults do usuário (2026-10-20): estudo 2030/02Q, janela 06:00–21:00,
+  `linhas_rodar=[]` = todas as linhas],
   `1.3_qh_a_partir_de_partidas` [QH factíveis a partir de tabela de contagens
   por linha/sentido/faixa — aceita formato longo (Faixa+Partidas) ou wide
   (uma coluna por faixa, melt automático); headsign derivado da vista;
@@ -58,6 +60,10 @@ por aplicação Streamlit (`src/app.py`). Contém versões antigas em R (`codigo
 - `clean_gtfs()` = limpeza em cascata (remove registros órfãos), equivalente ao
   `gtfstools::filter_by_trip_id`.
 - Projeção geográfica: EPSG:31983. Saídas em `resultados/` e `dados/`.
+- CSVs de QH (scripts 1/1.2/1.3/1.4) saem com `trip_id` **vazio por design** —
+  a coluna é preenchida ao subir o quadro no sistema **Sigmob** e salvar.
+- "Decimais"/segundos nas partidas do script 7 são herdados do `stop_times`
+  ajustado por GPS (script 2); correr `.round('min')` só se o usuário pedir.
 - Docs e comentários em português. Execução: `python -m streamlit run src/app.py`.
 
 ## Memória: como usar
