@@ -26,7 +26,7 @@ if _args.config:
 # ==============================================================================
 INPUT_ZIPS = _config.get("INPUT_ZIPS", [
     r"C:/R_SMTR/dados/gtfs/2026/gtfs_rio-de-janeiro_pub_sppo.zip",
-    r"C:/R_SMTR/dados/gtfs/2026/gtfs_rio-de-janeiro_pub_rio.zip",
+    r"C:/R_SMTR/dados/gtfs/2026/gtfs_rio-de-janeiro_pub_RIO.zip",
 ])
 if isinstance(INPUT_ZIPS, str):
     INPUT_ZIPS = [x.strip() for x in INPUT_ZIPS.split('\n') if x.strip()]

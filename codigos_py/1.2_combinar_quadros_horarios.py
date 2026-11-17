@@ -29,18 +29,18 @@ if _args.config:
 BASE_DADOS = Path(_config.get("BASE_DADOS", "C:/R_SMTR/dados"))
 BASE_RESULTADOS = Path(_config.get("BASE_RESULTADOS", "C:/R_SMTR/resultados"))
 
-ano_gtfs = str(_config.get("ano_gtfs", "2030"))
-mes_gtfs = str(_config.get("mes_gtfs", "10")).zfill(2)
-estudo_gtfs = str(_config.get("estudo_gtfs", "02"))
+ano_gtfs = str(_config.get("ano_gtfs", "2026"))
+mes_gtfs = str(_config.get("mes_gtfs", "11")).zfill(2)
+estudo_gtfs = str(_config.get("estudo_gtfs", "03"))
 
 # Serviços e horários de corte
-servico_origem = str(_config.get("servico_origem", "U_REG"))      # Ex.: Dia Útil
+servico_origem = str(_config.get("servico_origem", "S_REG"))      # Ex.: Sábado
 servico_destino = str(_config.get("servico_destino", "D_REG"))    # Ex.: Domingo
-hora_inicio = str(_config.get("hora_inicio", "06:00:00"))         # Início do bloco a importar
-hora_fim = str(_config.get("hora_fim", "21:00:00"))               # Fim do bloco a importar (exclusivo)
+hora_inicio = str(_config.get("hora_inicio", "09:00:00"))         # Início do bloco a importar
+hora_fim = str(_config.get("hora_fim", "18:00:00"))               # Fim do bloco a importar (exclusivo)
 
 # Linhas a rodar (se vazio ou ['todas'], processa todas as linhas encontradas)
-linhas_rodar = _config.get("linhas_rodar", [])
+linhas_rodar = _config.get("linhas_rodar", ["804", "807", "809", "825", "840", "842", "849", "868", "870", "892", "898", "SN825", "SN840", "SN898", "808", "821", "822", "833", "841", "869", "893", "SN821", "SN893"])
 if isinstance(linhas_rodar, str):
     linhas_rodar = [x.strip() for x in linhas_rodar.split(',') if x.strip()]
 linhas_rodar_set = {str(x).upper() for x in linhas_rodar} if linhas_rodar and ('todas' not in [str(x).lower() for x in linhas_rodar]) else set()

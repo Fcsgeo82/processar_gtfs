@@ -29,13 +29,13 @@ if _args.config:
 # Parâmetros principais
 BASE_RESULTADOS = Path(_config.get("BASE_RESULTADOS", "C:/R_SMTR/resultados"))
 
-ano_gtfs = str(_config.get("ano_gtfs", "2030"))
-mes_gtfs = str(_config.get("mes_gtfs", "10")).zfill(2)
-estudo_gtfs = str(_config.get("estudo_gtfs", "01"))
+ano_gtfs = str(_config.get("ano_gtfs", "2026"))
+mes_gtfs = str(_config.get("mes_gtfs", "11")).zfill(2)
+estudo_gtfs = str(_config.get("estudo_gtfs", "05"))
 
 # Caminho da tabela de contagens (formato wide: uma coluna por faixa;
 # ou formato longo: colunas Faixa, Partidas_Faixa)
-caminho_partidas = Path(_config.get("caminho_partidas", "partidas_pf_sppo_como_du.csv"))
+caminho_partidas = Path(_config.get("caminho_partidas", "Simulações - Página23.csv"))
 
 # service_id dos arquivos gerados
 service_id = str(_config.get("service_id", "F_REG"))
@@ -215,20 +215,20 @@ if duplicatas.any():
     raise ValueError(f"{duplicatas.sum()} linhas duplicadas em (servico, sentido, faixa). Exemplos: {ex}")
 
 # 3. Conversão da contagem de partidas
-valores = df['partidas_faixa'].fillna('').astype(str).str.strip()
-mascara_traco = ~valores.str.fullmatch(r'\d+')
-n_tracos = int(mascara_traco.sum())
+valores_raw = df['partidas_faixa'].fillna('').astype(str).str.strip()
+# Aceita números inteiros ou com casas decimais (ex.: "1,000", "2.000", "0,000") normalizando vírgula para ponto
+valores_norm = valores_raw.str.replace(',', '.', regex=False)
+numericos = pd.to_numeric(valores_norm, errors='coerce')
+mascara_nao_num = numericos.isna() & (valores_raw != '')
+n_tracos = int(mascara_nao_num.sum())
 if n_tracos:
     if traco_ausente == 'erro':
         raise ValueError(f"{n_tracos} valores não numéricos na coluna partidas_faixa (traco_ausente='erro').")
     print(f"   Aviso: {n_tracos} valores '-'/'vazios' em partidas_faixa tratados como 0.")
-    valores = valores.where(~mascara_traco, '0')
+numericos = numericos.fillna(0)
 
-df['n_partidas'] = pd.to_numeric(valores, errors='coerce')
-if df['n_partidas'].isna().any():
-    ex = df[df['n_partidas'].isna()][['servico', 'sentido', 'faixa', 'partidas_faixa']].head(10).to_dict('records')
-    raise ValueError(f"Contagens não conversíveis em partidas_faixa. Exemplos: {ex}")
-df['n_partidas'] = df['n_partidas'].astype(int)
+# Converte contagens para inteiros
+df['n_partidas'] = numericos.round().astype(int)
 if (df['n_partidas'] < 0).any():
     raise ValueError("Contagens negativas em partidas_faixa.")
 
@@ -294,6 +294,9 @@ for (servico, sentido), grupo in grupos:
 
 df_bandas = pd.DataFrame(bandas)
 print(f"   Grupos com partidas: {grupos_processados} | pulados (todas as faixas zeradas): {grupos_pulados}")
+if df_bandas.empty:
+    print("   ⚠️ Nenhuma banda gerada (todas as contagens de partidas estão zeradas ou filtradas).")
+    exit(0)
 print(f"   Bandas geradas: {len(df_bandas):,} | partidas: {int(df_bandas['n_partidas'].sum()):,}")
 
 # 6. Gate de verificação (reexpansão x entrada) — aborta antes de gravar

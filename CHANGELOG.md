@@ -4,6 +4,19 @@ Todas as alterações notáveis neste projeto serão documentadas neste arquivo.
 
 O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
+## [Não lançado] - 2026-11-17
+
+### Adicionado
+- Novo app Streamlit standalone `src/app_carregar_qh.py`: ferramenta interativa para carregar arquivos CSV de quadros de horários (gerados pelos scripts 1.3/1.4) em um GTFS base, substituindo as frequências por sentido (`trip_headsign`) e calendário (`service_id`). Inclui pré-visualização de alterações, detecção de necessidade de clonagem de viagens molde com autorização do usuário e download direto do GTFS modificado. Execução: `python -m streamlit run src/app_carregar_qh.py`.
+- Novo módulo puro `src/gtfs_carregar_qh.py`: lógica pura de leitura de quadros horários (`parse_qh_csv`), matching contra `routes.txt` e `trips.txt` (`detectar_alteracoes`), substituição em `frequencies.txt`, clonagem de moldes e limpeza com `clean_gtfs`.
+- Novo script CLI `codigos_py/1.5_carregar_qh_no_gtfs.py` e novo modo **1.5** na aba 1 do app principal (`src/tabs/tab_1_extrair_qh.py`), permitindo execução por linha de comando ou via pipeline com `--config`.
+- Novos testes unitários e de integração em `tests/test_gtfs_carregar_qh.py` cobrindo parsing de CSVs, substituição seletiva por sentido, clonagem com e sem autorização, e execução do CLI.
+
+### Corrigido
+- `codigos_py/1.3_qh_a_partir_de_partidas.py`:
+  - Conversão de contagens de partidas agora aceita números formatados com casas decimais (ex.: `"1,000"`, `"2,000"`, `"0,000"` ou com ponto `"1.0"`), normalizando vírgula para ponto e convertendo via `.round().astype(int)`. Antes, o regex `fullmatch(r'\d+')` tratava qualquer número formatado com vírgula como traço/vazio, zerando todas as contagens da tabela quando `traco_ausente='zerar'` e resultando em `KeyError: 'n_partidas'` ao tentar somar um DataFrame de bandas vazio.
+  - Adicionada verificação explícita `if df_bandas.empty` com aviso limpo antes de acessar colunas de bandas, evitando exceções quando todas as partidas estiverem zeradas ou filtradas.
+
 ## [Não lançado] - 2026-11-10
 
 ### Removido

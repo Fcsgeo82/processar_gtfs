@@ -357,3 +357,21 @@ irmão `C:\github_repositories\validacao_gtfs`, renumerados como
     `src/tabs/tab_11_comparar_os.py` e as seções correspondentes no `README.md`.
 - **Verificação:** validados com dois GTFS sintéticos e `py_compile`/`compileall`
   em ambos os repositórios.
+
+---
+
+# CONTEXTO — Sessão de Desenvolvimento 2026-11-17
+
+## Carregador de Quadros de Horários (CSV) no GTFS (`1.5` / `app_carregar_qh.py`)
+
+- **Motivação:** Realizar a operação inversa do script `1.4`: permitir carregar arquivos CSV de quadros de horários gerados pelo script `1.3` (ou `1.4`) de volta em um GTFS existente, substituindo as frequências das viagens correspondentes.
+- **Decisões de Design:**
+  - `service_id`: inferido do sufixo do nome do arquivo (`horarios_{servico}_{headsign}_{service_id}.csv`), com opção de fallback manual na interface.
+  - Substituição por sentido: cada CSV representa um sentido específico e substitui apenas as frequências correspondentes a `(route_id, trip_headsign, service_id)`, mantendo intactos o sentido oposto e os demais calendários.
+  - Clonagem de viagens molde com autorização: caso a linha não possua viagens cadastradas para o `service_id` desejado no GTFS, o sistema identifica a necessidade de clonar uma viagem molde a partir de `U_REG`, alertando o usuário e exigindo autorização explícita antes de gerar novas trips em `trips.txt` e `stop_times.txt`.
+- **Componentes:**
+  - `src/gtfs_carregar_qh.py`: módulo de lógica pura.
+  - `src/app_carregar_qh.py`: app Streamlit standalone com visualização prévia das substituições e download direto.
+  - `codigos_py/1.5_carregar_qh_no_gtfs.py`: script CLI integrável com `--config`.
+  - Modo `1.5` na aba 1 (`src/tabs/tab_1_extrair_qh.py`).
+  - `tests/test_gtfs_carregar_qh.py`: 7 testes unitários e de integração (100% aprovados).

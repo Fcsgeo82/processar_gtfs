@@ -20,7 +20,7 @@ def render():
 
     modo = st.radio(
         "Selecione o processamento",
-        ["1", "1.1", "1.2", "1.3", "1.3.1", "1.4"],
+        ["1", "1.1", "1.2", "1.3", "1.3.1", "1.4", "1.5"],
         key="t1_modo",
         horizontal=True,
     )
@@ -436,3 +436,60 @@ def render():
             _opcional(config, "nome_excel", nome_excel)
             _opcional(config, "tipo_dia", tipo_dia)
             run_script(_script_path("1.4_qh_pf_a_partir_do_gtfs.py"), config)
+
+    elif modo == "1.5":
+        st.subheader("Script 1.5 — Carregar quadros horários (CSV) no GTFS")
+        st.markdown(
+            "Substitui frequências do GTFS pelos arquivos CSV de quadros horários (formato dos scripts 1.3 / 1.4). "
+            "Para executar a interface interativa completa com upload e pré-visualização, use também: "
+            "`python -m streamlit run src/app_carregar_qh.py`."
+        )
+
+        col1, col2 = st.columns(2)
+        with col1:
+            end_gtfs_base = st.text_input(
+                "Caminho GTFS Base (endereco_gtfs_base)",
+                value=default_gtfs,
+                help="GTFS base a ser modificado",
+                key="t1_end_gtfs_base_15",
+            )
+            caminho_saida_15 = st.text_input(
+                "Caminho GTFS de Saída (caminho_saida)",
+                value=f"{base_dados}/gtfs/{ano}/gtfs_combi_{ano}-{mes}-{estudo}Q_com_qh.zip",
+                help="Caminho do novo arquivo ZIP",
+                key="t1_caminho_saida_15",
+            )
+            arquivos_qh = st.text_input(
+                "Pasta ou Arquivo(s) CSV (arquivos_qh)",
+                value=f"{base_resultados_default}/quadro_horario_extraido/{ano}/{mes}/qh_por_linha_partidas/{estudo}Q",
+                help="Caminho da pasta contendo os CSVs ou lista separada por vírgula",
+                key="t1_arquivos_qh_15",
+            )
+
+        with col2:
+            service_id_fallback = st.text_input(
+                "Calendário Padrão (fallback)",
+                value="F_REG",
+                help="Usado caso o nome do arquivo CSV não termine com _F_REG, _U_REG, etc.",
+                key="t1_sid_fallback_15",
+            )
+            permitir_clonagem = st.checkbox(
+                "Autorizar clonagem de viagens molde",
+                value=False,
+                help="Se marcado, permite criar novas viagens a partir de U_REG caso a linha ainda não possua o calendário.",
+                key="t1_permitir_clonagem_15",
+            )
+
+        if st.button("▶ Executar Script 1.5", key="btn_script_15"):
+            config = {
+                "BASE_DADOS": base_dados,
+                "ano_gtfs": st.session_state.ano_gtfs,
+                "mes_gtfs": st.session_state.mes_gtfs,
+                "estudo_gtfs": st.session_state.estudo_gtfs,
+                "endereco_gtfs_base": end_gtfs_base,
+                "caminho_saida": caminho_saida_15,
+                "arquivos_qh": arquivos_qh,
+                "service_id_fallback": service_id_fallback,
+                "permitir_clonagem": permitir_clonagem,
+            }
+            run_script(_script_path("1.5_carregar_qh_no_gtfs.py"), config)

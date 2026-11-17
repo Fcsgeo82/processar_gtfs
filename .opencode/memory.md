@@ -5,6 +5,33 @@ Preferência: adicionar entradas no topo, datadas.
 
 ---
 
+## 2026-11-17 (2) — Criação do carregador de quadros horários (CSV) no GTFS (`1.5`)
+
+- Pedido: criar app Streamlit para carregar CSVs de quadros horários (formato dos scripts 1.3/1.4) em um GTFS, realizando a operação inversa do script 1.4.
+- Decisões confirmadas com o usuário:
+  1. `service_id`: inferido do sufixo do nome do arquivo (ex.: `F_REG`, `U_REG`), com campo manual de fallback.
+  2. Substituição por sentido: cada CSV altera apenas o sentido (`headsign`) indicado, preservando o sentido oposto e os demais calendários.
+  3. Clonagem de molde: se a linha não tiver viagens cadastradas no GTFS para o calendário informado, o app identifica a necessidade de clonar a viagem molde a partir de `U_REG`, exibindo aviso e exigindo autorização explícita do usuário.
+- Componentes criados:
+  - `src/gtfs_carregar_qh.py`: módulo de lógica pura (leitura de CSVs, matching com GTFS, substituição de frequências, clonagem segura e `clean_gtfs`).
+  - `src/app_carregar_qh.py`: app Streamlit standalone com upload de GTFS/CSVs, tabela de pré-visualização, confirmação de clonagem e botão de download do GTFS atualizado.
+  - `codigos_py/1.5_carregar_qh_no_gtfs.py`: script CLI com suporte a `--config`.
+  - Modo `1.5` na aba 1 (`src/tabs/tab_1_extrair_qh.py`) do app principal.
+  - `tests/test_gtfs_carregar_qh.py`: 7 testes unitários e de integração cobrindo parsing, substituição direta, clonagem com/sem autorização e execução do CLI.
+
+---
+
+## 2026-11-17 — Correção no parsing numérico de contagens em `1.3_qh_a_partir_de_partidas.py`
+
+- Problema: ao rodar com `Simulações - Página23.csv`, o script falhava na linha 297 com `KeyError: 'n_partidas'`.
+- Diagnóstico: a tabela de entrada continha números formatados com decimais e vírgula (ex.: `"1,000"`, `"2,000"`, `"0,000"`). O regex anterior `fullmatch(r'\d+')` falhava devido à vírgula e, com `traco_ausente='zerar'`, o script convertia todas as células da tabela para 0. Com todas as partidas zeradas, `bandas` ficava vazio (`[]`) e `pd.DataFrame(bandas)` gerava um DataFrame sem colunas, causando `KeyError: 'n_partidas'` ao acessar `df_bandas['n_partidas']`.
+- Correção:
+  1. `valores_norm = valores_raw.str.replace(',', '.', regex=False)` seguido de conversão numérica com `pd.to_numeric` e arredondamento inteiro (`.round().astype(int)`), aceitando números inteiros ou floats formatados.
+  2. Proteção adicionada `if df_bandas.empty:` para exibir aviso limpo e encerrar caso não haja nenhuma banda a gerar.
+- Validação: `Simulações - Página23.csv` processou 168 linhas (6 serviços, 12 grupos), gerando 113 bandas e 351 partidas com gate de verificação 100% OK.
+
+---
+
 ## 2026-11-10 — Criação do comparador GTFS × GTFS e transplante de 11 e 11.2 para `validacao_gtfs`
 
 - Pedido: criar o comparador de dois GTFS (inicialmente `11.2`) a exemplo do

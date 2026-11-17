@@ -23,8 +23,8 @@ BASE_DADOS = Path(_config.get("BASE_DADOS", "C:/R_SMTR/dados"))
 BASE_RESULTADOS = Path(_config.get("BASE_RESULTADOS", "C:/R_SMTR/resultados"))
 
 ano_gtfs = _config.get("ano_gtfs", "2030")
-mes_gtfs = _config.get("mes_gtfs", "10")
-estudo_gtfs = _config.get("estudo_gtfs", "03") #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
+mes_gtfs = _config.get("mes_gtfs", "11")
+estudo_gtfs = _config.get("estudo_gtfs", "05") #ESTUDO, NÃO CONSIDERAR MAIS QUINZENA!!!!
 
 # GTFS file path
 end_gtfs = Path(_config.get("end_gtfs", BASE_DADOS / f"gtfs/{ano_gtfs}/gtfs_combi_{ano_gtfs}-{mes_gtfs}-{estudo_gtfs}Q.zip"))
@@ -40,7 +40,7 @@ with zipfile.ZipFile(end_gtfs, 'r') as z:
         trips = pd.read_csv(f)
 
 # Lines to run
-linhas_rodar = _config.get("linhas_roda"r"," ["006", "007", "010", "014", "111", "157", "160", "161", "162", "238", "275", "361", "453", "459", "474", "485", "553", "613", "838", "862", "864", "872", "897","918", "SN483", "SP864", "SV483"])
+linhas_rodar = _config.get("linhas_rodar", ["557"])
 if isinstance(linhas_rodar, str):
     linhas_rodar = [x.strip() for x in linhas_rodar.split(',') if x.strip()]
 

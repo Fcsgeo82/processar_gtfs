@@ -23,6 +23,12 @@ por aplicação Streamlit (`src/app.py`). Contém versões antigas em R (`codigo
   Lógica pura em `src/qh_format.py`; testes em `tests/test_qh_format.py`
   (`python -m unittest discover -s tests -t . -v`). Execução:
   `python -m streamlit run src/app_format_qh.py`.
+- `src/app_carregar_qh.py`: app Streamlit standalone para carregar arquivos CSV de
+  quadros de horários (formato dos scripts 1.3/1.4) em um GTFS base, substituindo as
+  frequências por sentido (`headsign`) e calendário (`service_id`). Permite clonar
+  viagens molde de `U_REG` com confirmação explícita do usuário caso a linha não possua
+  o calendário no GTFS. Lógica pura em `src/gtfs_carregar_qh.py`; testes em
+  `tests/test_gtfs_carregar_qh.py`. Execução: `python -m streamlit run src/app_carregar_qh.py`.
 - `codigos_py/`: scripts Python do pipeline, numerados 1 a 10
   (`1_extrair_qh_especificado_no_gtfs` [faixas de frequência],
   `1.1_extrair_qh_partidas` [grade de partidas detalhadas],
@@ -31,9 +37,9 @@ por aplicação Streamlit (`src/app.py`). Contém versões antigas em R (`codigo
   `linhas_rodar=[]` = todas as linhas],
   `1.3_qh_a_partir_de_partidas` [QH factíveis a partir de tabela de contagens
   por linha/sentido/faixa — aceita formato longo (Faixa+Partidas) ou wide
-  (uma coluna por faixa, melt automático); headsign derivado da vista;
-  exporta CSVs por quadro + Excel com uma aba por linha; default F_REG;
-  aba 1 → modo 1.3],
+  (uma coluna por faixa, melt automático), tolerante a contagens com vírgula/decimais;
+  headsign derivado da vista; exporta CSVs por quadro + Excel com uma aba por linha;
+  default F_REG; aba 1 → modo 1.3],
   `1.3.1_conferir_partidas_geradas` [conferência independente dos quadros do 1.3
   contra a entrada — reexpande bandas, compara (servico,sentido,faixa), confere
   Excel; relatório + exit 0/1; aba 1 → modo 1.3.1],
@@ -43,6 +49,9 @@ por aplicação Streamlit (`src/app.py`). Contém versões antigas em R (`codigo
   (`U_REG`) p/ Internorte/Intersul/Transcarioca/Santa Cruz e sábado (`S_REG`) p/
   GTU/TUSE; saída própria `qh_por_linha_pf_gtfs/{estudo}Q/` com CSVs + Excel +
   gate; aba 1 → modo 1.4],
+  `1.5_carregar_qh_no_gtfs` [operação inversa do 1.4: carrega CSVs de QH no GTFS,
+  substituindo frequências por sentido/calendário; suporte a clonagem de molde;
+  aba 1 → modo 1.5],
   `2_ajustar_stop_times`, `4_trajetos_alternativos`, `5_juntar_gtfs` e variantes 5.1–5.4,
   `6_gerar_shapes`, `7_lista_partidas` + 7.1 + 7.2 (tipos de dia `du`/`sab`/`dom`/`pf`
   [ponto facultativo, `F_REG`]; `get_pattern` lança `ValueError` p/ token desconhecido;
