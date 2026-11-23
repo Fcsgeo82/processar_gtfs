@@ -443,6 +443,8 @@ def detectar_alteracoes(gtfs_dict: Dict[str, pd.DataFrame], lista_qh: List[Quadr
                     route_id=route_id,
                     target_trip_id=target_tid,
                     existing_trip_ids=existing_tids,
+                    molde_trip_id=target_tid,
+                    molde_service_id=qh.service_id,
                     mensagem=f"Substituição direta: {len(existing_tids)} trip(s) existente(s) identificada(s).",
                 )
             )
@@ -544,81 +546,128 @@ def aplicar_quadros_gtfs(
             })
             continue
 
-        target_trip_id = item.target_trip_id
-
-        # Se requer clonagem
+        # Determinar viagem molde e tipo de operação
         if item.status == "REQUER_CLONAGEM":
             molde_tid = item.molde_trip_id
-            molde_trip_row = df_trips[df_trips["trip_id"] == molde_tid].iloc[0].to_dict()
+            molde_sid = item.molde_service_id
+            tipo_op = "CLONAGEM"
+        else:
+            molde_tid = item.existing_trip_ids[0] if item.existing_trip_ids else item.molde_trip_id
+            molde_sid = qh.service_id
+            tipo_op = "SUBSTITUICAO_DIRETA"
 
-            # Gera novo trip_id único e legível
-            hs_clean = sanitize_filename(qh.headsign)
-            novo_tid = f"TRIP_{qh.servico}_{hs_clean}_{qh.service_id}_{uuid.uuid4().hex[:6]}"
+        # Extrair dados da viagem molde em trips e stop_times ANTES de qualquer remoção
+        matching_molde_trips = df_trips[df_trips["trip_id"] == molde_tid]
+        if matching_molde_trips.empty:
+            log(f"⚠️ Erro: Viagem molde {molde_tid} não encontrada em trips.txt.")
+            continue
+        molde_trip_row = matching_molde_trips.iloc[0].to_dict()
 
-            # Nova trip
+        # Extrair sequência de paradas da viagem molde
+        paradas_molde = df_st[df_st["trip_id"] == molde_tid].copy()
+        if not paradas_molde.empty and "stop_sequence" in paradas_molde.columns:
+            try:
+                paradas_molde["_seq"] = pd.to_numeric(paradas_molde["stop_sequence"], errors="coerce")
+                paradas_molde = paradas_molde.sort_values("_seq").drop(columns=["_seq"])
+            except Exception:
+                pass
+
+        # Se for substituição direta, remove todas as trips antigas daquele sentido/service_id
+        # de trips.txt, stop_times.txt e frequencies.txt
+        if item.existing_trip_ids:
+            tids_a_limpar = set(item.existing_trip_ids)
+            df_trips = df_trips[~df_trips["trip_id"].isin(tids_a_limpar)]
+            df_st = df_st[~df_st["trip_id"].isin(tids_a_limpar)]
+            df_freq = df_freq[~df_freq["trip_id"].isin(tids_a_limpar)]
+            log(f"  ✓ Removidas {len(tids_a_limpar)} trip(s) antiga(s) de {qh.servico} - {qh.headsign} ({qh.service_id})")
+
+        # Garante que o service_id exista em calendar.txt se calendar.txt existir
+        if not df_cal.empty and "service_id" in df_cal.columns:
+            if qh.service_id not in df_cal["service_id"].values:
+                molde_cal = df_cal[df_cal["service_id"] == molde_sid]
+                if not molde_cal.empty:
+                    novo_cal_row = molde_cal.iloc[0].to_dict()
+                    novo_cal_row["service_id"] = qh.service_id
+                else:
+                    novo_cal_row = {c: "0" for c in df_cal.columns}
+                    novo_cal_row["service_id"] = qh.service_id
+                    novo_cal_row["start_date"] = "20240101"
+                    novo_cal_row["end_date"] = "20281231"
+                    if "F" in qh.service_id:
+                        for d in ["monday", "tuesday", "wednesday", "thursday", "friday"]:
+                            if d in novo_cal_row:
+                                novo_cal_row[d] = "1"
+                df_cal = pd.concat([df_cal, pd.DataFrame([novo_cal_row])], ignore_index=True)
+
+        # Invariante SMTR / dbt: cada faixa horária de frequencies.txt DEVE ter seu próprio trip_id único!
+        # Isso garante relação 1:1 entre trips.txt e frequencies.txt, evitando duplicações
+        # no modelo viagem_planejada_planejamento.
+        novas_trips_rows = []
+        novas_st_dfs = []
+        novas_freq_rows = []
+        tids_gerados = []
+
+        # Determina o departure_time da primeira parada da viagem molde (em segundos)
+        t0_molde = -1
+        if not paradas_molde.empty and "departure_time" in paradas_molde.columns:
+            t0_molde = horario_to_seconds(paradas_molde.iloc[0]["departure_time"])
+
+        for b in qh.bandas:
+            novo_tid = str(uuid.uuid4())
+            tids_gerados.append(novo_tid)
+
+            # 1. Linha em trips.txt
             nova_trip = molde_trip_row.copy()
             nova_trip["trip_id"] = novo_tid
             nova_trip["service_id"] = qh.service_id
-            df_trips = pd.concat([df_trips, pd.DataFrame([nova_trip])], ignore_index=True)
+            nova_trip["trip_headsign"] = qh.headsign
+            novas_trips_rows.append(nova_trip)
 
-            # Clona paradas de stop_times
-            paradas_molde = df_st[df_st["trip_id"] == molde_tid].copy()
-            if not paradas_molde.empty:
-                paradas_molde["trip_id"] = novo_tid
-                df_st = pd.concat([df_st, paradas_molde], ignore_index=True)
-
-            # Garante que o service_id exista em calendar.txt se calendar.txt existir
-            if not df_cal.empty and "service_id" in df_cal.columns:
-                if qh.service_id not in df_cal["service_id"].values:
-                    # Clona configuração do molde_service_id se existir, ou cria dias padrão
-                    molde_cal = df_cal[df_cal["service_id"] == item.molde_service_id]
-                    if not molde_cal.empty:
-                        novo_cal_row = molde_cal.iloc[0].to_dict()
-                        novo_cal_row["service_id"] = qh.service_id
-                    else:
-                        novo_cal_row = {c: "0" for c in df_cal.columns}
-                        novo_cal_row["service_id"] = qh.service_id
-                        novo_cal_row["start_date"] = "20240101"
-                        novo_cal_row["end_date"] = "20281231"
-                        if "F" in qh.service_id:
-                            novo_cal_row["monday"] = "1"
-                            novo_cal_row["tuesday"] = "1"
-                            novo_cal_row["wednesday"] = "1"
-                            novo_cal_row["thursday"] = "1"
-                            novo_cal_row["friday"] = "1"
-                    df_cal = pd.concat([df_cal, pd.DataFrame([novo_cal_row])], ignore_index=True)
-
-            target_trip_id = novo_tid
-            log(f"  ✓ Clonada viagem molde {molde_tid} ({item.molde_service_id}) -> {novo_tid} para {qh.service_id}")
-
-        else:
-            # Substituição direta: remove frequências antigas de TODAS as trips daquele sentido/service_id
-            tids_a_limpar = item.existing_trip_ids
-            df_freq = df_freq[~df_freq["trip_id"].isin(tids_a_limpar)]
-            log(f"  ✓ Frequências antigas removidas para as trips: {tids_a_limpar}")
-
-        # Inserir as novas bandas em frequencies.txt vinculadas ao target_trip_id
-        novas_linhas_freq = []
-        for b in qh.bandas:
-            novas_linhas_freq.append({
-                "trip_id": target_trip_id,
+            # 2. Linha em frequencies.txt (estritamente 1 por trip_id)
+            novas_freq_rows.append({
+                "trip_id": novo_tid,
                 "start_time": b.start_time,
                 "end_time": b.end_time,
                 "headway_secs": str(b.headway_secs),
                 "exact_times": "0",
             })
 
-        df_freq = pd.concat([df_freq, pd.DataFrame(novas_linhas_freq)], ignore_index=True)
-        log(f"  ✓ {len(novas_linhas_freq)} bandas ({qh.total_partidas} partidas) inseridas para {qh.servico} - {qh.headsign} ({qh.service_id})")
+            # 3. Paradas em stop_times.txt
+            if not paradas_molde.empty:
+                st_banda = paradas_molde.copy()
+                st_banda["trip_id"] = novo_tid
+
+                t0_banda = horario_to_seconds(b.start_time)
+                if t0_molde >= 0 and t0_banda >= 0:
+                    delta_sec = t0_banda - t0_molde
+                    if delta_sec != 0:
+                        if "arrival_time" in st_banda.columns:
+                            arr_secs = st_banda["arrival_time"].apply(horario_to_seconds)
+                            st_banda["arrival_time"] = (arr_secs + delta_sec).apply(seconds_to_horario)
+                        if "departure_time" in st_banda.columns:
+                            dep_secs = st_banda["departure_time"].apply(horario_to_seconds)
+                            st_banda["departure_time"] = (dep_secs + delta_sec).apply(seconds_to_horario)
+
+                novas_st_dfs.append(st_banda)
+
+        if novas_trips_rows:
+            df_trips = pd.concat([df_trips, pd.DataFrame(novas_trips_rows)], ignore_index=True)
+        if novas_st_dfs:
+            df_st = pd.concat([df_st] + novas_st_dfs, ignore_index=True)
+        if novas_freq_rows:
+            df_freq = pd.concat([df_freq, pd.DataFrame(novas_freq_rows)], ignore_index=True)
+
+        log(f"  ✓ {len(novas_freq_rows)} viagem(ns)/banda(s) gerada(s) ({qh.total_partidas} partidas) para {qh.servico} - {qh.headsign} ({qh.service_id})")
 
         relatorio_execucao.append({
             "servico": qh.servico,
             "headsign": qh.headsign,
             "service_id": qh.service_id,
             "status": "SUCESSO",
-            "tipo_operacao": "CLONAGEM" if item.status == "REQUER_CLONAGEM" else "SUBSTITUICAO_DIRETA",
-            "trip_id": target_trip_id,
-            "bandas_inseridas": len(novas_linhas_freq),
+            "tipo_operacao": tipo_op,
+            "trip_ids": tids_gerados,
+            "trip_id": tids_gerados[0] if tids_gerados else "",
+            "bandas_inseridas": len(novas_freq_rows),
             "partidas_inseridas": qh.total_partidas,
         })
 

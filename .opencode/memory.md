@@ -648,3 +648,41 @@ Preferência: adicionar entradas no topo, datadas.
   programação válida, 4 dataframes, sem exceções e download disponível.
 - Documentação atualizada: `README.md` (nova seção do app), `CHANGELOG.md`,
   `AGENTS.md` e `CONTEXTO.md`.
+
+---
+
+## 2026-11-17 / 2026-11-18 — Novo App/Script para Carregar Quadros de Horários no GTFS e Correção de Unicidade DBT
+
+- **Demanda do Usuário**: Criar um app Streamlit standalone para carregar arquivos CSV de quadros de horários
+  (formato gerado pelos scripts 1.3/1.4) de volta em um GTFS base, substituindo as frequências correspondentes
+  por sentido (`headsign`) e calendário (`service_id`).
+- **Implementação**:
+  - `src/gtfs_carregar_qh.py`: módulo de lógica pura com funções para ler GTFS/CSVs, cruzar serviços/rotas e
+    substituir frequências com suporte a clonagem de moldes de `U_REG`.
+  - `src/app_carregar_qh.py`: interface Streamlit standalone com upload de GTFS e CSVs, detecção automática de
+    alterações, autorização de clonagem com checkbox e download direto do GTFS ZIP atualizado.
+  - `codigos_py/1.5_carregar_qh_no_gtfs.py`: CLI automatizado que aceita `--config`.
+  - Modo `1.5` adicionado na aba 1 do app principal (`src/tabs/tab_1_extrair_qh.py`).
+  - Testes em `tests/test_gtfs_carregar_qh.py`.
+- **Incidente DBT**:
+  - Teste pós-processamento dbt da equipe de dados falhou:
+    `🔴 Testes dbt (post) - treatment--gtfs - data_versao_gtfs=2026-10-19 | viagem_planejada_planejamento ❌ Todos os registros de 'feed_start_date' e 'id_viagem' são únicos.`
+  - **Diagnóstico**: No modelo de dados Sigmob/SMTR, a relação entre `trips.txt` e `frequencies.txt` é **estritamente 1:1**
+    (cada faixa horária possui sua própria viagem com `trip_id` exclusivo). Ao carregar os CSVs com múltiplas bandas,
+    o script vinculava todas as bandas de um quadro a um único `trip_id`, gerando até 14 linhas em `frequencies.txt` com o
+    mesmo `trip_id`. Quando o dbt constrói a tabela/view `viagem_planejada_planejamento` via join, esse `trip_id` (`id_viagem`)
+    duplica para cada faixa horária na mesma data de feed.
+  - **Correção em `src/gtfs_carregar_qh.py`**:
+    - Ao substituir um quadro, remove todas as trips antigas daquele par sentido/calendário de `trips.txt`, `stop_times.txt` e `frequencies.txt`.
+    - Para cada banda horária do novo quadro, gera um `trip_id` único (UUID), adicionando 1 registro em `trips.txt`, 1 registro em `frequencies.txt` e sua respectiva sequência de paradas em `stop_times.txt`.
+    - Em `stop_times.txt`, o horário da primeira parada (`departure_time`) é alinhado com o `start_time` da banda e os tempos subsequentes são calculados por offset a partir da viagem molde.
+  - **Validação**: Testes unitários atualizados e aprovados (24/24 OK), confirmando que `frequencies['trip_id'].is_unique` e `trips['trip_id'].is_unique` são 100% preservados, e o teste de unicidade do dbt é aprovado.
+  - **Reparo dos Arquivos Afetados**: Os dois GTFS gerados anteriormente na raiz (`0173_gtfs_out_26_2E (2)_atualizado_qh.zip` e `0175_gtfs_out_26_1E_ret3_atualizado_qh.zip`) foram reparados com desmembramento 1:1 das faixas horárias e criação das respectivas paradas em `stop_times.txt`. Ambos tiveram backups originais preservados e foram auditados com 0 duplicatas no teste dbt `(feed_start_date, id_viagem)`.
+  - **Expurgo de Viagens Órfãs em `stop_times.txt`**: Identificado que 77 viagens no 0173 e 68 no 0175 continuavam em `trips.txt` e `stop_times.txt` sem registro correspondente em `frequencies.txt`. O validador da SMTR (`reexpandir_service`) lê viagens sem frequencies como partidas de horário fixo (timetable) pelo `stop_sequence=0`, gerando 116 e 136 partidas duplicadas no mesmo horário da faixa horária. Todas as viagens órfãs foram expurgadas dos dois arquivos na raiz e a verificação pelo algoritmo oficial da SMTR confirmou **0 partidas duplicadas** para todas as linhas afetadas.
+
+### 2026-11-23 — Reestruturação da Documentação Técnica em Dois Níveis
+- **Escopo:** Executadas as 5 fases de `.opencode/docs/Diretrizes de documentação.md` sem modificar nenhum script Python, teste ou arquivo de configuração.
+- **Entregáveis:**
+  - `README.md` reescrito como porta de entrada concisa (Nível 1, 167 linhas), removendo referências obsoletas aos scripts `11*` e ao antigo caminho `validacao`.
+  - Criada pasta `docs/` (Nível 2) com 7 documentos: `architecture.md`, `pipeline.md`, `scripts_reference.md` (23 scripts de `codigos_py/`, 6 módulos de `src/`, 9 abas em `src/tabs/`), `configuration.md`, `data_dictionary.md`, `testing.md` e `troubleshooting.md`.
+- **Revisão e Validação:** `24/24` testes `unittest` aprovados, `0` links relativos quebrados, `23/23` scripts catalogados, diagramas Mermaid válidos e 6 ajustes finos aplicados após revisão técnica independente (incluindo correção do comportamento real de `get_pattern()` em `7_lista_partidas.py`, que retorna `""`, e formatos de viagens GPS por modal no Script 2).

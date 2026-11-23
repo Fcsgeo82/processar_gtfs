@@ -97,25 +97,44 @@ class TestCarregarQH(unittest.TestCase):
 
     def test_substituicao_direta_apenas_no_sentido(self):
         gtfs = criar_gtfs_sintetico()
-        # Modificar apenas a Ida de 386 em U_REG
+        # Modificar a Ida de 386 em U_REG com 2 bandas horárias
         csv_text = (
             "trip_id,trip_headsign,trip_short_name,start_time,end_time,headway_secs\n"
             ",Anchieta,386,06:00:00,10:00:00,3600\n"
+            ",Anchieta,386,10:00:00,18:00:00,1800\n"
         )
         qh = parse_qh_csv(io.StringIO(csv_text), nome_arquivo="horarios_386_Anchieta_U_REG.csv")
         itens = detectar_alteracoes(gtfs, [qh])
         self.assertEqual(len(itens), 1)
         self.assertEqual(itens[0].status, "SUBSTITUICAO_DIRETA")
-        self.assertEqual(itens[0].target_trip_id, "T386_U_IDA")
 
         novo_gtfs, rel = aplicar_quadros_gtfs(gtfs, itens, permitir_clonagem=False)
         freq = novo_gtfs["frequencies"]
+        trips = novo_gtfs["trips"]
+        st = novo_gtfs["stop_times"]
 
-        # A viagem T386_U_IDA agora só tem 1 banda (06:00 às 10:00, headway 3600)
-        ida_freq = freq[freq["trip_id"] == "T386_U_IDA"]
-        self.assertEqual(len(ida_freq), 1)
-        self.assertEqual(ida_freq.iloc[0]["start_time"], "06:00:00")
-        self.assertEqual(ida_freq.iloc[0]["headway_secs"], "3600")
+        # Invariante SMTR/dbt: frequencies.txt DEVE ter trip_id único (1:1 com trips)
+        self.assertTrue(freq["trip_id"].is_unique, "frequencies.txt contém trip_id duplicado!")
+        self.assertTrue(trips["trip_id"].is_unique, "trips.txt contém trip_id duplicado!")
+
+        # A viagem antiga T386_U_IDA foi substituída por 2 novas trips (uma para cada banda)
+        trips_386_ida = trips[(trips["route_id"] == "R386") & (trips["trip_headsign"] == "Anchieta") & (trips["service_id"] == "U_REG")]
+        self.assertEqual(len(trips_386_ida), 2)
+        novos_tids = trips_386_ida["trip_id"].tolist()
+        self.assertNotIn("T386_U_IDA", novos_tids)
+
+        # Frequências vinculadas 1:1
+        freq_ida = freq[freq["trip_id"].isin(novos_tids)].sort_values("start_time")
+        self.assertEqual(len(freq_ida), 2)
+        self.assertEqual(freq_ida.iloc[0]["start_time"], "06:00:00")
+        self.assertEqual(freq_ida.iloc[0]["headway_secs"], "3600")
+        self.assertEqual(freq_ida.iloc[1]["start_time"], "10:00:00")
+        self.assertEqual(freq_ida.iloc[1]["headway_secs"], "1800")
+
+        # Stop times atualizados para cada banda
+        for tid, row_f in freq_ida.set_index("trip_id").iterrows():
+            st_tid = st[st["trip_id"] == tid].sort_values("stop_sequence")
+            self.assertEqual(st_tid.iloc[0]["departure_time"], row_f["start_time"])
 
         # O sentido oposto (Volta / T386_U_VOLTA) NÃO foi alterado!
         volta_freq = freq[freq["trip_id"] == "T386_U_VOLTA"]
@@ -230,7 +249,14 @@ class TestCarregarQH(unittest.TestCase):
             freq = gtfs_out["frequencies"]
             trips = gtfs_out["trips"]
 
-            ida_u = freq[freq["trip_id"] == "T386_U_IDA"]
+            # Invariante SMTR / dbt: unicidade estrita de trip_id
+            self.assertTrue(freq["trip_id"].is_unique, "frequencies.txt tem trip_ids duplicados!")
+            self.assertTrue(trips["trip_id"].is_unique, "trips.txt tem trip_ids duplicados!")
+
+            u_trips = trips[(trips["route_id"] == "R386") & (trips["trip_headsign"] == "Anchieta") & (trips["service_id"] == "U_REG")]
+            self.assertEqual(len(u_trips), 1)
+            u_tid = u_trips.iloc[0]["trip_id"]
+            ida_u = freq[freq["trip_id"] == u_tid]
             self.assertEqual(len(ida_u), 1)
             self.assertEqual(ida_u.iloc[0]["start_time"], "07:00:00")
 

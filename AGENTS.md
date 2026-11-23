@@ -15,7 +15,7 @@ por aplicação Streamlit (`src/app.py`). Contém versões antigas em R (`codigo
   barra de progresso por tempo decorrido e logs em tempo real.
 - `src/tabs/tab_*.py`: uma aba por etapa (QH, ajustar ST, alternativos,
   juntar, shapes, partidas, extensões, filtrar, juntar dois).
-  A aba 1 tem modos para os scripts 1, 1.1, 1.2, 1.3, 1.3.1 e 1.4; a aba 7
+  A aba 1 tem modos para os scripts 1, 1.1, 1.2, 1.3, 1.3.1, 1.4 e 1.5; a aba 7
   tem modos para 7, 7.1 e 7.2.
 - `src/app_format_qh.py`: app Streamlit standalone (versão Python do Shiny
   `1.2 app_format_qh.R`) — upload de GTFS, seleção em cascata, comparação da
@@ -54,7 +54,7 @@ por aplicação Streamlit (`src/app.py`). Contém versões antigas em R (`codigo
   aba 1 → modo 1.5],
   `2_ajustar_stop_times`, `4_trajetos_alternativos`, `5_juntar_gtfs` e variantes 5.1–5.4,
   `6_gerar_shapes`, `7_lista_partidas` + 7.1 + 7.2 (tipos de dia `du`/`sab`/`dom`/`pf`
-  [ponto facultativo, `F_REG`]; `get_pattern` lança `ValueError` p/ token desconhecido;
+  [ponto facultativo, `F_REG`]; `get_pattern` retorna `""` p/ token desconhecido;
   7.2 agora aceita `--config` com `caminho_du`/`caminho_dom`/`caminho_saida`; aba 7 → modos 7/7.1/7.2),
   `8_gerar_extensoes` + 8.1,
   `9_filtrar_gtfs_por_lista`, `10_juntar_dois_gtfs`).
@@ -73,7 +73,10 @@ por aplicação Streamlit (`src/app.py`). Contém versões antigas em R (`codigo
   `CHANGELOG.md` e `memory.md` próprios.
 - `codigos_R/`: versões antigas do pipeline em R (`datados/` = obsoletos).
 - `Iniciar_App.bat`: atalho de inicialização da aplicação.
-- `CONTEXTO.md`, `CAPABILITIES_AND_AGENTS.md`, `plano_de_implementacao.md`: docs.
+- `docs/`: documentação técnica modular (Nível 2) complementar ao `README.md` (Nível 1):
+  `architecture.md`, `pipeline.md`, `scripts_reference.md`, `configuration.md`,
+  `data_dictionary.md`, `testing.md` e `troubleshooting.md`.
+- `CONTEXTO.md`, `CAPABILITIES_AND_AGENTS.md`, `plano_de_implementacao.md`: docs auxiliares/históricos.
 - `PLANO_1.3_qh_a_partir_de_partidas.md`: plano pronto para execução (2026-10-02) do
   script `1.3` — gerar QH no formato do script 1 a partir da lista de partidas do 7/7.2.
   Invariante: contagem de partidas por faixa preservada; headway regularizado.
@@ -88,6 +91,12 @@ por aplicação Streamlit (`src/app.py`). Contém versões antigas em R (`codigo
 - Projeção geográfica: EPSG:31983. Saídas em `resultados/` e `dados/`.
 - CSVs de QH (scripts 1/1.2/1.3/1.4) saem com `trip_id` **vazio por design** —
   a coluna é preenchida ao subir o quadro no sistema **Sigmob** e salvar.
+- **Invariante 1:1 trips/frequencies (1.5 e app_carregar_qh):** no modelo SMTR/Sigmob/dbt
+  (`viagem_planejada_planejamento`), cada faixa horária em `frequencies.txt` DEVE ter
+  seu próprio `trip_id` exclusivo em `trips.txt` e `stop_times.txt`. Nunca repetir
+  `trip_id` em múltiplas faixas de frequencies para evitar falha no teste dbt
+  `unique: [feed_start_date, id_viagem]`. Stop_times tem `departure_time` da primeira parada
+  alinhado ao `start_time` da faixa.
 - "Decimais"/segundos nas partidas do script 7 são herdados do `stop_times`
   ajustado por GPS (script 2); correr `.round('min')` só se o usuário pedir.
 - **Extensão de linha (7, 8, 8.1):** regra única = comprimento GIS do shape

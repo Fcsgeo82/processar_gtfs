@@ -375,3 +375,15 @@ irmão `C:\github_repositories\validacao_gtfs`, renumerados como
   - `codigos_py/1.5_carregar_qh_no_gtfs.py`: script CLI integrável com `--config`.
   - Modo `1.5` na aba 1 (`src/tabs/tab_1_extrair_qh.py`).
   - `tests/test_gtfs_carregar_qh.py`: 7 testes unitários e de integração (100% aprovados).
+
+---
+
+# CONTEXTO — Sessão de Desenvolvimento 2026-11-23
+
+## Reestruturação da Documentação Técnica em Dois Níveis
+
+- **Motivação:** Atender às diretrizes em `.opencode/docs/Diretrizes de documentação.md`, separando a porta de entrada do projeto (`README.md`) da referência técnica detalhada (`docs/`), eliminando defasagens (ex.: menções antigas aos scripts `11*` e caminho `validacao`).
+- **Nova Estrutura:**
+  - **Nível 1:** `README.md` reestruturado de forma concisa (~167 linhas) com visão geral, árvore simplificada, instalação, execução rápida, navegação para `docs/`, testes (`unittest`) e guia de manutenção.
+  - **Nível 2 (`docs/`):** criados `architecture.md`, `pipeline.md`, `scripts_reference.md`, `configuration.md`, `data_dictionary.md`, `testing.md` e `troubleshooting.md`.
+- **Verificação:** `python -m unittest discover -s tests -t . -v` (24/24 OK), `0` links relativos quebrados, `23/23` scripts de `codigos_py/` catalogados e revisão cruzada contra o código-fonte. Nenhum script Python ou arquivo de configuração foi alterado.

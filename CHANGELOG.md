@@ -4,6 +4,33 @@ Todas as alterações notáveis neste projeto serão documentadas neste arquivo.
 
 O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
+## [Não lançado] - 2026-11-23
+
+### Adicionado
+- Documentação técnica modular em dois níveis (`docs/`), conforme `.opencode/docs/Diretrizes de documentação.md`:
+  - `docs/architecture.md`: arquitetura do sistema, camadas, integrações (Sigmob, dbt, `validacao_gtfs`), diagrama Mermaid e invariantes técnicas.
+  - `docs/pipeline.md`: fluxo completo das etapas 1 a 10 (incluindo ramificações, etapas descontinuadas/evitadas, pontos de entrada, reprocessamento e diagrama Mermaid fiel ao código).
+  - `docs/scripts_reference.md`: catálogo técnico pesquisável de todos os 23 scripts de `codigos_py/`, 6 módulos de `src/` e 9 abas em `src/tabs/`.
+  - `docs/configuration.md`: dependências, `PYTHONIOENCODING`, mecanismo `--config <json>`, parâmetros globais da UI, estrutura de diretórios e tabela de parâmetros/defaults por etapa.
+  - `docs/data_dictionary.md`: dicionário de dados de entradas, intermediários, entregáveis e arquivos temporários/diagnósticos.
+  - `docs/testing.md`: suíte `unittest` (`24` testes em `tests/`), auditoria `1.3.1`, gates internos e validação externa via `validacao_gtfs`.
+  - `docs/troubleshooting.md`: catálogo de problemas conhecidos e soluções baseadas nos erros reais do código.
+
+### Alterado
+- `README.md`: reestruturado como porta de entrada concisa (Nível 1) com apresentação, instalação, execução rápida, índice para `docs/`, testes e orientações de manutenção; removidas referências obsoletas à família de scripts `11*` e ao caminho antigo `validacao`.
+- `AGENTS.md`: adicionada referência à pasta `docs/`, atualizado o modo `1.5` na descrição da aba 1 e corrigida a nota sobre `get_pattern` em `7_lista_partidas.py` (retorna `""` para token desconhecido).
+
+## [Não lançado] - 2026-11-18
+
+### Corrigido
+- `src/gtfs_carregar_qh.py`:
+  - **Invariante de unicidade 1:1 entre `trips.txt` e `frequencies.txt`**: Corrigida falha no teste dbt de pós-processamento (`viagem_planejada_planejamento: Todos os registros de 'feed_start_date' e 'id_viagem' são únicos`).
+  - No modelo de dados Sigmob/SMTR, cada faixa horária de frequência DEVE possuir seu próprio `trip_id` exclusivo (cardinalidade 1:1 estrita). Anteriormente, todas as bandas horárias de um quadro substituído/clonado estavam sendo vinculadas ao mesmo `trip_id`, gerando N linhas em `frequencies.txt` com a mesma chave primária, causando duplicação na view/tabela de viagens planejadas do dbt.
+  - A função `aplicar_quadros_gtfs` agora remove todas as viagens antigas daquele serviço/sentido/calendário de `trips.txt`, `stop_times.txt` e `frequencies.txt`, e gera um novo `trip_id` exclusivo (UUID) para cada faixa horária individual.
+  - Para cada nova viagem gerada, replica e projeta as paradas da viagem molde em `stop_times.txt`, alinhando perfeitamente o `departure_time` da primeira parada com o `start_time` da banda de frequência e preservando as durações entre paradas.
+  - Atualizados os testes unitários em `tests/test_gtfs_carregar_qh.py` com asserções explícitas de que `frequencies['trip_id'].is_unique` e `trips['trip_id'].is_unique` são sempre `True`.
+  - **Remoção de trips órfãs em `stop_times.txt`**: Corrigida a duplicação de partidas identificada nos dois arquivos GTFS atualizados (`0173` e `0175`). Como o código anterior havia removido as trips antigas apenas de `frequencies.txt`, elas continuavam existindo em `trips.txt` e `stop_times.txt`. Qualquer validador/calculador de partidas da SMTR (`reexpandir_service` do script `2_comparar_os_gtfs.py`) que lê viagens regulares pela primeira saída de `stop_times.txt` quando não há `frequencies.txt` interpretava essas trips como partidas regulares adicionais no mesmo horário da faixa horária nova, gerando de 116 a 136 partidas duplicadas. Todas as 77 (no 0173) e 68 (no 0175) trips órfãs foram expurgadas, zerando as duplicatas de partidas.
+
 ## [Não lançado] - 2026-11-17
 
 ### Adicionado
